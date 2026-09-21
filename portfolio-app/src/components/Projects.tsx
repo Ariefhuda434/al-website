@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
-import { projects } from "../lib/content";
+import { useContent } from "./contentContext";
 import Reveal, { ease } from "./Reveal";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
@@ -10,6 +10,7 @@ import SectionHeading from "./SectionHeading";
 const emojis = ["🎓", "🎨", "📚", "🤝", "🌷", "🎤", "📸"];
 
 export default function Projects() {
+  const { site } = useContent();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 55%"] });
   const fill = useSpring(scrollYProgress, { stiffness: 110, damping: 26, mass: 0.4 });
@@ -18,7 +19,7 @@ export default function Projects() {
     <Section id="projects">
       <Reveal scale={0.97} y={48}>
         <div className="glass rounded-[2.75rem] p-7 sm:p-10 md:p-16">
-          <SectionHeading title="currently... ♡" sub="and probably trying something new again soon" />
+          <SectionHeading title={site.currentLabel} sub={site.currentSub} />
 
           <div ref={ref} className="relative mt-14 pl-9 sm:pl-14">
             <div aria-hidden="true" className="absolute bottom-3 left-[9px] top-3 w-0.5 rounded-full bg-berry/15 sm:left-[13px]" />
@@ -29,7 +30,7 @@ export default function Projects() {
             />
 
             <ol className="space-y-6">
-              {projects.map((item, i) => (
+              {site.currentItems.map((item, i) => (
                 <li key={item} className="relative">
                   <motion.span
                     aria-hidden="true"
@@ -59,7 +60,7 @@ export default function Projects() {
             </ol>
 
             <p className="mt-10 font-display text-2xl italic text-berry md:text-3xl">
-              and probably trying something new again soon ♡
+              {site.currentSub} ♡
             </p>
           </div>
         </div>

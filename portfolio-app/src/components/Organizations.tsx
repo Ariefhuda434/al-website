@@ -1,17 +1,12 @@
 "use client";
 
+import { useContent } from "./contentContext";
 import Reveal from "./Reveal";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
 
-const orgs = [
-  { org: "IPM", role: "ketua lembaga kebersihan", emoji: "🌟" },
-  { org: "IMM", role: "sekretaris bidang media komunikasi", emoji: "📬" },
-  { org: "HMJ — Himpunan Mahasiswa Jurusan", role: "anggota divisi informasi & dokumentasi", emoji: "📸" },
-  { org: "Formasi — Forum Mahasiswa Berprestasi", role: "anggota", emoji: "🏅" },
-];
-
 export default function Organizations() {
+  const { site } = useContent();
   return (
     <Section id="organizations">
       <Reveal>
@@ -19,9 +14,9 @@ export default function Organizations() {
           <SectionHeading title="organizations ♡" sub="pengalaman organisasi selama berkuliah & berproses" />
 
           <ul className="mt-12 grid gap-4 sm:grid-cols-2">
-            {orgs.map((o) => (
+            {site.orgs.map((o, i) => (
               <li
-                key={o.org}
+                key={o.org + i}
                 className="group rounded-3xl border border-white/80 bg-white/55 p-6 shadow-[0_18px_40px_-28px_rgba(139,58,77,0.5)] transition duration-300 hover:-translate-y-1 hover:bg-white/75 sm:p-7"
               >
                 <span className="text-3xl" aria-hidden="true">

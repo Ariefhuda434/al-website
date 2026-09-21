@@ -40,6 +40,7 @@ function Letters({ text, delay = 0 }: { text: string; delay?: number }) {
 export default function Hero() {
   const { site } = useContent();
   const introLines = site.heroIntro.split("\n");
+  const headline = site.heroTitle || `hi, i'm ${site.shortName} ♡`;
   // Parallax halus mengikuti mouse (hanya di perangkat dengan mouse)
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -80,7 +81,7 @@ export default function Hero() {
             aria-label={site.name}
             className="text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
           >
-            <Letters text={`hi, i'm ${site.shortName} ♡`} delay={0.6} />
+            <Letters text={headline} delay={0.6} />
           </h1>
 
           <motion.div

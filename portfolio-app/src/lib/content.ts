@@ -180,6 +180,17 @@ export const projects = [
   "taking pictures whenever i feel like it",
 ];
 
+export const orgs = [
+  { org: "IPM", role: "ketua lembaga kebersihan", emoji: "🌟" },
+  { org: "IMM", role: "sekretaris bidang media komunikasi", emoji: "📬" },
+  { org: "HMJ — Himpunan Mahasiswa Jurusan", role: "anggota divisi informasi & dokumentasi", emoji: "📸" },
+  { org: "Formasi — Forum Mahasiswa Berprestasi", role: "anggota", emoji: "🏅" },
+];
+
+export const music = [
+  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" },
+];
+
 export const testimonials = {
   title: "a little something i made ♡",
   sub: "handmade with love",

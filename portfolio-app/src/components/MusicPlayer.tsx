@@ -1,15 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
-import { site } from '../lib/content';
-
-const songs = [
-  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" },
-];
+import { useContent } from './contentContext';
 
 export default function MusicPlayer() {
+  const { site } = useContent();
+  const songs = site.music.length > 0 ? site.music : [{ title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" }];
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const safeCurrent = current >= songs.length ? 0 : current;
 
   useEffect(() => {
     const a = audioRef.current;
@@ -55,7 +54,7 @@ export default function MusicPlayer() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 bg-[#FFC0CB]/90 backdrop-blur-3xl rounded-[2.5rem] px-5 py-4 shadow-2xl shadow-[#FFC0CB]/30 border border-white/20 flex items-center gap-4">
-      <audio ref={audioRef} src={songs[current].src} preload="auto" />
+      <audio ref={audioRef} src={songs[safeCurrent].src} preload="auto" />
       
       {/* Vinyl Spinning Record */}
       <div className={`relative w-14 h-14 flex items-center justify-center ${playing ? 'animate-[spin_3s_linear_infinite]' : ''}`}>
@@ -69,13 +68,13 @@ export default function MusicPlayer() {
       </button>
       
       <div className="flex flex-col">
-        <span className="text-sm font-semibold text-[#8B3A4D]">{songs[current].title}</span>
+        <span className="text-sm font-semibold text-[#8B3A4D]">{songs[safeCurrent].title}</span>
         <span className="text-xs text-[#8B3A4D]/50">{site.shortName}</span>
       </div>
       
       <div className="flex gap-2">
         {songs.map((_, i) => (
-          <button key={i} onClick={() => changeSong(i)} className={`w-3 h-3 rounded-full transition-all duration-300 ${i === current ? 'bg-[#8B3A4D] scale-125' : 'bg-[#FFC0CB]/50 hover:bg-[#FFC0CB]'}`} />
+          <button key={i} onClick={() => changeSong(i)} className={`w-3 h-3 rounded-full transition-all duration-300 ${i === safeCurrent ? 'bg-[#8B3A4D] scale-125' : 'bg-[#FFC0CB]/50 hover:bg-[#FFC0CB]'}`} />
         ))}
       </div>
     </div>

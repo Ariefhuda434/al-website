@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Camera, Clapperboard, Flower2, Mic, Palette, PenLine, Users, type LucideIcon } from "lucide-react";
-import { skills } from "../lib/content";
+import { useContent } from "./contentContext";
 import { FlowerHead } from "./Flower";
 import { Stagger, StaggerItem } from "./Reveal";
 import Section from "./Section";
@@ -19,14 +19,15 @@ const icons: Record<string, LucideIcon> = {
 };
 
 export default function Skills() {
+  const { site } = useContent();
   return (
     <Section id="skills">
-      <SectionHeading title="things i love ♡" sub="with passion, with love, with dreams" />
+      <SectionHeading title={site.skillsTitle} sub={site.skillsSub} />
       <Stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" gap={0.08}>
-        {skills.map((s, i) => {
+        {site.skills.map((s, i) => {
           const Icon = icons[s.icon] ?? Flower2;
           return (
-            <StaggerItem key={s.id} className={i === 6 ? "sm:col-span-2 lg:col-span-1" : ""}>
+            <StaggerItem key={s.id + i} className={i === 6 ? "sm:col-span-2 lg:col-span-1" : ""}>
               <motion.article
                 whileHover={{ y: -6 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}

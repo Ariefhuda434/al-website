@@ -2,16 +2,17 @@
 
 import { motion } from "framer-motion";
 import { Flower2 } from "lucide-react";
-import { site, testimonials } from "../lib/content";
+import { useContent } from "./contentContext";
 import { FlowerHead } from "./Flower";
 import Reveal, { ease } from "./Reveal";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
 
 export default function Testimonials() {
+  const { site } = useContent();
   return (
     <Section id="testimonials">
-      <SectionHeading title={testimonials.title} sub={testimonials.sub} />
+      <SectionHeading title={site.handmadeTitle} sub={site.handmadeSub} />
 
       <Reveal className="mt-14" y={40}>
         <div className="glass relative mx-auto max-w-4xl overflow-hidden rounded-[2.5rem] px-7 py-14 sm:px-14 sm:py-20">
@@ -23,7 +24,7 @@ export default function Testimonials() {
           <Flower2 className="relative h-12 w-12 text-mauve" aria-hidden="true" />
 
           <div className="relative mt-6">
-            {testimonials.paras.map((para, i) => (
+            {site.handmadeParas.map((para, i) => (
               <motion.p
                 key={i}
                 initial={{ opacity: 0, y: 24 }}

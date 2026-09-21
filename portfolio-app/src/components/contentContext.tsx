@@ -3,7 +3,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getFirebaseDb, isFirebaseConfigured } from "../lib/firebaseConfig";
-import { about as aboutDef, site as siteDef, works as worksDef } from "../lib/content";
+import {
+  about as aboutDef,
+  music as musicDef,
+  orgs as orgsDef,
+  projects as currentDef,
+  site as siteDef,
+  skills as skillsDef,
+  testimonials as handmadeDef,
+  works as worksDef,
+} from "../lib/content";
 
 export type Work = {
   id: string;
@@ -16,12 +25,17 @@ export type Work = {
   createdAt?: number;
 };
 
+export type Skill = { id: string; icon: string; emoji: string; title: string; en: string; idn: string };
+export type Org = { org: string; role: string; emoji: string };
+export type Song = { title: string; src: string };
+
 export type SiteContent = {
   name: string;
   shortName: string;
   motto: string[];
   intro: string;
   heroBadge: string;
+  heroTitle: string;
   heroIntro: string;
   aboutTitle: string;
   aboutSub: string;
@@ -33,6 +47,17 @@ export type SiteContent = {
   contactDesc: string;
   portfolioTitle: string;
   portfolioSub: string;
+  skillsTitle: string;
+  skillsSub: string;
+  skills: Skill[];
+  currentLabel: string;
+  currentSub: string;
+  currentItems: string[];
+  orgs: Org[];
+  handmadeTitle: string;
+  handmadeSub: string;
+  handmadeParas: string[];
+  music: Song[];
   cv: string;
   whatsapp: string;
   email: string;
@@ -44,6 +69,7 @@ const siteDefaults: SiteContent = {
   motto: [...siteDef.motto],
   intro: siteDef.intro,
   heroBadge: "Halo, senang kamu mampir",
+  heroTitle: "hi, i'm al ♡",
   heroIntro:
     "just a little space about me,\nthe things i love, the things i make,\nand the little things i'm learning along the way.",
   aboutTitle: aboutDef.title,
@@ -56,8 +82,18 @@ const siteDefaults: SiteContent = {
   contactDesc:
     "Hanya sekadar menyapa, ingin bertanya, atau cerita hal kecil? Kirim pesan — aku senang membaca dan membalasnya.",
   portfolioTitle: "little things i've made ♡",
-  portfolioSub:
-    "a little collection of things i've created, worked on, or simply had fun making.",
+  portfolioSub: "a little collection of things i've created, worked on, or simply had fun making.",
+  skillsTitle: "things i love ♡",
+  skillsSub: "with passion, with love, with dreams",
+  skills: skillsDef.map((s) => ({ ...s })),
+  currentLabel: "currently... ♡",
+  currentSub: "and probably trying something new again soon",
+  currentItems: [...currentDef],
+  orgs: orgsDef.map((o) => ({ ...o })),
+  handmadeTitle: handmadeDef.title,
+  handmadeSub: handmadeDef.sub,
+  handmadeParas: [...handmadeDef.paras],
+  music: musicDef.map((m) => ({ ...m })),
   cv: siteDef.cv,
   whatsapp: siteDef.whatsapp,
   email: siteDef.email,
@@ -86,30 +122,79 @@ export function useContent() {
   return useContext(ContentCtx);
 }
 
+function strOr(v: any, fallback: string) {
+  return typeof v === "string" ? v : fallback;
+}
+
+function mapSkills(v: unknown, fallback: Skill[]): Skill[] {
+  if (!Array.isArray(v) || v.length === 0) return fallback;
+  return v.map((it, i) => {
+    const o = (it ?? {}) as Record<string, any>;
+    return {
+      id: strOr(o.id, `s_${i}`),
+      icon: strOr(o.icon, "flower"),
+      emoji: strOr(o.emoji, "🌸"),
+      title: strOr(o.title, ""),
+      en: strOr(o.en, ""),
+      idn: strOr(o.idn, ""),
+    };
+  });
+}
+
+function mapOrgs(v: unknown, fallback: Org[]): Org[] {
+  if (!Array.isArray(v) || v.length === 0) return fallback;
+  return v.map((it, i) => {
+    const o = (it ?? {}) as Record<string, any>;
+    return { org: strOr(o.org, ""), role: strOr(o.role, ""), emoji: strOr(o.emoji, "⭐") };
+  });
+}
+
+function mapSongs(v: unknown, fallback: Song[]): Song[] {
+  if (!Array.isArray(v) || v.length === 0) return fallback;
+  return v.map((it, i) => {
+    const o = (it ?? {}) as Record<string, any>;
+    return { title: strOr(o.title, `Lagu ${i + 1}`), src: strOr(o.src, "/music/RIPPLES.mp3") };
+  });
+}
+
 function mergeSite(data: Record<string, unknown>): SiteContent {
   const d = data as Record<string, any>;
   return {
-    name: typeof d.name === "string" ? d.name : siteDefaults.name,
-    shortName: typeof d.shortName === "string" ? d.shortName : siteDefaults.shortName,
+    name: strOr(d.name, siteDefaults.name),
+    shortName: strOr(d.shortName, siteDefaults.shortName),
     motto: Array.isArray(d.motto) ? d.motto.map(String) : siteDefaults.motto,
-    intro: typeof d.intro === "string" ? d.intro : siteDefaults.intro,
-    heroBadge: typeof d.heroBadge === "string" ? d.heroBadge : siteDefaults.heroBadge,
-    heroIntro: typeof d.heroIntro === "string" ? d.heroIntro : siteDefaults.heroIntro,
-    aboutTitle: typeof d.aboutTitle === "string" ? d.aboutTitle : siteDefaults.aboutTitle,
-    aboutSub: typeof d.aboutSub === "string" ? d.aboutSub : siteDefaults.aboutSub,
-    aboutRole: typeof d.aboutRole === "string" ? d.aboutRole : siteDefaults.aboutRole,
-    aboutPhoto: typeof d.aboutPhoto === "string" ? d.aboutPhoto : siteDefaults.aboutPhoto,
-    instagram: typeof d.instagram === "string" ? d.instagram.replace("@", "") : siteDefaults.instagram,
-    instagramLabel:
-      typeof d.instagramLabel === "string" ? d.instagramLabel : siteDefaults.instagramLabel,
-    contactTitle: typeof d.contactTitle === "string" ? d.contactTitle : siteDefaults.contactTitle,
-    contactDesc: typeof d.contactDesc === "string" ? d.contactDesc : siteDefaults.contactDesc,
-    portfolioTitle:
-      typeof d.portfolioTitle === "string" ? d.portfolioTitle : siteDefaults.portfolioTitle,
-    portfolioSub: typeof d.portfolioSub === "string" ? d.portfolioSub : siteDefaults.portfolioSub,
-    cv: typeof d.cv === "string" ? d.cv : siteDefaults.cv,
-    whatsapp: typeof d.whatsapp === "string" ? d.whatsapp : siteDefaults.whatsapp,
-    email: typeof d.email === "string" ? d.email : siteDefaults.email,
+    intro: strOr(d.intro, siteDefaults.intro),
+    heroBadge: strOr(d.heroBadge, siteDefaults.heroBadge),
+    heroTitle: strOr(d.heroTitle, siteDefaults.heroTitle),
+    heroIntro: strOr(d.heroIntro, siteDefaults.heroIntro),
+    aboutTitle: strOr(d.aboutTitle, siteDefaults.aboutTitle),
+    aboutSub: strOr(d.aboutSub, siteDefaults.aboutSub),
+    aboutRole: strOr(d.aboutRole, siteDefaults.aboutRole),
+    aboutPhoto: strOr(d.aboutPhoto, siteDefaults.aboutPhoto),
+    instagram: strOr(d.instagram, siteDefaults.instagram).replace("@", ""),
+    instagramLabel: strOr(d.instagramLabel, siteDefaults.instagramLabel),
+    contactTitle: strOr(d.contactTitle, siteDefaults.contactTitle),
+    contactDesc: strOr(d.contactDesc, siteDefaults.contactDesc),
+    portfolioTitle: strOr(d.portfolioTitle, siteDefaults.portfolioTitle),
+    portfolioSub: strOr(d.portfolioSub, siteDefaults.portfolioSub),
+    skillsTitle: strOr(d.skillsTitle, siteDefaults.skillsTitle),
+    skillsSub: strOr(d.skillsSub, siteDefaults.skillsSub),
+    skills: mapSkills(d.skills, siteDefaults.skills),
+    currentLabel: strOr(d.currentLabel, siteDefaults.currentLabel),
+    currentSub: strOr(d.currentSub, siteDefaults.currentSub),
+    currentItems: Array.isArray(d.currentItems)
+      ? d.currentItems.map(String)
+      : siteDefaults.currentItems,
+    orgs: mapOrgs(d.orgs, siteDefaults.orgs),
+    handmadeTitle: strOr(d.handmadeTitle, siteDefaults.handmadeTitle),
+    handmadeSub: strOr(d.handmadeSub, siteDefaults.handmadeSub),
+    handmadeParas: Array.isArray(d.handmadeParas)
+      ? d.handmadeParas.map(String)
+      : siteDefaults.handmadeParas,
+    music: mapSongs(d.music, siteDefaults.music),
+    cv: strOr(d.cv, siteDefaults.cv),
+    whatsapp: strOr(d.whatsapp, siteDefaults.whatsapp),
+    email: strOr(d.email, siteDefaults.email),
   };
 }
 
@@ -147,12 +232,12 @@ export function ContentProvider({ children }: { children: ReactNode }) {
             const w = d.data() as Record<string, any>;
             list.push({
               id: d.id,
-              title: String(w.title ?? ""),
-              desc: String(w.desc ?? ""),
-              idn: String(w.idn ?? ""),
-              image: String(w.image ?? ""),
-              aspect: String(w.aspect ?? "aspect-[3/4]"),
-              tone: String(w.tone ?? "from-mauve to-butter"),
+              title: strOr(w.title, ""),
+              desc: strOr(w.desc, ""),
+              idn: strOr(w.idn, ""),
+              image: strOr(w.image, ""),
+              aspect: strOr(w.aspect, "aspect-[3/4]"),
+              tone: strOr(w.tone, "from-mauve to-butter"),
               createdAt: typeof w.createdAt === "number" ? w.createdAt : undefined,
             });
           });
