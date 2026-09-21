@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, setDoc, limit } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
@@ -188,7 +188,8 @@ function Breakdown({ title, rows }: { title: string; rows: [string, number][] })
 }
 
 function ContentTab() {
-  const [data, setData] = useState<ContentData | null>(null);
+  const [data, setData] = useState<ContentData>({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -221,29 +222,29 @@ function ContentTab() {
                 email: (d.email ?? "") as string,
                 cv: (d.cv ?? "") as string,
               }
-            : null,
+            : {},
         );
+        setLoading(false);
       },
-      () => {},
+      () => setLoading(false),
     );
     return unsub;
   }, []);
 
   const set = (key: (typeof CONTENT_FIELDS)[number]) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSaved(false);
-    setData((d) => ({ ...d!, [key]: e.target.value }));
+    setData((d) => ({ ...d, [key]: e.target.value }));
   };
 
   const save = async () => {
-    if (!data) return;
     setSaving(true);
     try {
       const db = getFirebaseDb();
       const patch: Record<string, unknown> = {};
       for (const k of CONTENT_FIELDS) {
-        const v = data[k];
-        if (k === "motto") patch[k] = String(v).split(",").map((s) => s.trim());
-        else if (k === "aboutParas") patch[k] = String(v).split("\n").map((s) => s.trim()).filter(Boolean);
+        const v = String(data[k] ?? "");
+        if (k === "motto") patch[k] = v.split(",").map((s) => s.trim());
+        else if (k === "aboutParas") patch[k] = v.split("\n").map((s) => s.trim()).filter(Boolean);
         else patch[k] = v;
       }
       await setDoc(doc(db, "content", "main"), patch, { merge: true });
@@ -254,7 +255,7 @@ function ContentTab() {
     }
   };
 
-  if (!data) return <Card>Memuat konten dari Firestore…</Card>;
+  if (loading) return <Card>Membaca konten dari Firestore…</Card>;
 
   return (
     <div className="space-y-6">
@@ -789,9 +790,14 @@ export default function Admin() {
             <h1 className="font-playfair text-4xl text-[#8B3A4D] md:text-5xl">Dashboard Admin</h1>
             <p className="mt-1 text-[#8B3A4D]/60">Kelola konten, karya, dan lihat siapa saja yang mampir ♡</p>
           </div>
-          <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-glass">
-            <ExternalLink className="h-4 w-4" /> Buka situs
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-glass">
+              <ExternalLink className="h-4 w-4" /> Buka situs
+            </a>
+            <button type="button" onClick={() => signOut(getFirebaseAuth())} className="btn btn-glass text-danger">
+              Keluar
+            </button>
+          </div>
         </header>
 
         <nav className="mb-8 flex flex-wrap gap-2">
