@@ -55,7 +55,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-dvh items-center overflow-x-clip px-5 pb-24 pt-28 sm:px-8"
+      className="relative flex min-h-dvh items-center overflow-visible px-5 pb-24 pt-28 sm:px-8"
       onPointerMove={(e) => {
         if (e.pointerType !== "mouse") return;
         const r = e.currentTarget.getBoundingClientRect();
@@ -80,13 +80,13 @@ export default function Hero() {
 
           <h1
             aria-label={site.name}
-            className="flex flex-wrap items-center justify-center gap-[0.08em] text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
+            className="flex flex-wrap items-start justify-start gap-[0.08em] text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
           >
             <Letters text={headline} delay={0.6} />
             <motion.img
               src="/images/kartun lucu.png"
               alt="♥"
-              className="inline-block h-[0.55em] w-[0.55em] translate-y-[0.06em] rounded-[0.28em] object-cover"
+              className="inline-block h-[1.6em] w-[1.6em] -translate-y-[0.3em] self-center rounded-[0.85em] object-contain py-1"
               initial={{ opacity: 0, scale: 0, rotate: -12 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ duration: 0.7, ease, delay: 1.9 }}
@@ -94,7 +94,7 @@ export default function Hero() {
           </h1>
 
           <motion.div
-            className="mt-7"
+            className="mt-0"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease, delay: 1.5 }}
