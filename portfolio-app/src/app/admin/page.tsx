@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../lib/firebaseConfig';
+import { getFirebaseAuth } from '../../lib/firebaseConfig';
 
 export default function Admin() {
   const [email, setEmail] = useState('');
@@ -12,7 +12,7 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       setLoggedIn(true);
       setError('');
     } catch (err: any) {
