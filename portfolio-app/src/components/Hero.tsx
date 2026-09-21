@@ -2,7 +2,7 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
-import SafeImage from "./SafeImage";
+import Bouquet from "./Bouquet";
 import { useContent } from "./contentContext";
 import { ease } from "./Reveal";
 
@@ -86,7 +86,7 @@ export default function Hero() {
             <motion.img
               src="/images/kartun lucu.png"
               alt="♥"
-              className="inline-block h-[0.55em] w-[0.55em] translate-y-[0.06em] rounded-[0.22em] object-cover shadow-lg shadow-[#E8A0BF]/40 ring-2 ring-white/80"
+              className="inline-block h-[0.55em] w-[0.55em] translate-y-[0.06em] rounded-[0.28em] object-cover"
               initial={{ opacity: 0, scale: 0, rotate: -12 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ duration: 0.7, ease, delay: 1.9 }}
@@ -152,9 +152,7 @@ export default function Hero() {
             <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.35" strokeDasharray="1.2 2.6" strokeLinecap="round" />
           </svg>
           <motion.div style={{ x: bouquetX, y: bouquetY }} className="relative">
-            <div className="relative aspect-square w-full overflow-hidden rounded-[3rem] border border-cream/70 shadow-2xl shadow-blush/40">
-              <SafeImage src="/images/kartun lucu.png" alt={`Gambar ${site.shortName}`} tone="from-blush to-mauve" />
-            </div>
+            <Bouquet />
           </motion.div>
         </div>
       </div>
