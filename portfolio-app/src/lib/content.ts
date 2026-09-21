@@ -98,15 +98,6 @@ export const skills = [
 
 export const works = [
   {
-    id: 1,
-    title: "IMM Journal",
-    desc: "one of my little design projects.",
-    idn: "Salah satu proyek desain kecilku.",
-    image: "/images/design1.png",
-    aspect: "aspect-[3/1]",
-    tone: "from-blush to-mauve",
-  },
-  {
     id: 2,
     title: "design experiments",
     desc: "playing with colors, layouts, and random ideas.",
