@@ -39,8 +39,8 @@ export async function GET() {
     let content: Record<string, any> = {};
     if (cres.ok) {
       const j = await cres.json();
-      const d = j.document || j.documents?.[0];
-      if (d) content = fieldsToObj(d.fields);
+      const d = j.fields ?? j.document?.fields ?? j.documents?.[0]?.fields ?? {};
+      content = fieldsToObj(d);
     }
 
     const works: any[] = [];
