@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { getFirebaseAuth, getFirebaseDb, getFirebaseStorage, isFirebaseConfigured } from "../../lib/firebaseConfig";
 import { isAllowedAdmin, isSuspiciousInput, logAdmin, OWNER_EMAIL } from "../../lib/security";
+import { toast, ToastHost } from "../../components/ToastHost";
 
 const ASPECTS = [
   "aspect-[3/1]",
@@ -144,7 +145,11 @@ function UploadField({ label, onUrl, value }: { label: string; onUrl: (url: stri
               if (!f) return;
               setBusy(true);
               try {
-                onUrl(await uploadImage(f, "images"));
+                const url = await uploadImage(f, "images");
+                onUrl(url);
+                toast("Foto berhasil diunggah ke Storage ✓");
+              } catch (err) {
+                toast("Gagal unggah foto: " + (err instanceof Error ? err.message : "error"), "err");
               } finally {
                 setBusy(false);
               }
@@ -270,7 +275,11 @@ function AudioField({ value, onUrl }: { value: string; onUrl: (u: string) => voi
             if (!f) return;
             setBusy(true);
             try {
-              onUrl(await uploadImage(f, "music"));
+              const url = await uploadImage(f, "music");
+              onUrl(url);
+              toast("Lagu berhasil diunggah ke Storage ✓");
+            } catch (err) {
+              toast("Gagal unggah lagu: " + (err instanceof Error ? err.message : "error"), "err");
             } finally {
               setBusy(false);
             }
@@ -318,7 +327,10 @@ function HeroTab() {
         motto: form.motto.split(",").map((s) => s.trim()),
       }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -392,7 +404,10 @@ function AboutTab() {
         aboutParas: form.aboutParas.split("\n").map((s) => s.trim()).filter(Boolean),
       }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -456,7 +471,10 @@ function KontakTab() {
     try {
       await setDoc(doc(getFirebaseDb(), "content", "main"), { ...form }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -528,7 +546,10 @@ function LoveTab() {
         skills: sk.map((s) => ({ ...s })),
       }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -583,7 +604,10 @@ function CurrentTab() {
     try {
       await setDoc(doc(getFirebaseDb(), "content", "main"), { currentLabel: label, currentSub: sub, currentItems: items.map((s) => s.trim()).filter(Boolean) }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -630,7 +654,10 @@ function OrgsTab() {
     try {
       await setDoc(doc(getFirebaseDb(), "content", "main"), { orgs: orgs.map((o) => ({ ...o })) }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -676,7 +703,10 @@ function HandmadeTab() {
     try {
       await setDoc(doc(getFirebaseDb(), "content", "main"), { handmadeTitle: title, handmadeSub: sub, handmadeParas: paras.split("\n").map((s) => s.trim()).filter(Boolean) }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -720,7 +750,10 @@ function MusicTab() {
     try {
       await setDoc(doc(getFirebaseDb(), "content", "main"), { music: songs.map((s) => ({ ...s })) }, { merge: true });
       setSaved(true);
+      toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast("Gagal menyimpan: " + (err instanceof Error ? err.message : "error"), "err");
     } finally {
       setSaving(false);
     }
@@ -1360,6 +1393,7 @@ export default function Admin() {
         {tab === "music" && <MusicTab />}
         {tab === "portfolio" && <PortfolioTab />}
         {tab === "stats" && <StatsTab />}
+            <ToastHost />
       </div>
     </main>
   );

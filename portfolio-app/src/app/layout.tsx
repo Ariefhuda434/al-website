@@ -9,6 +9,7 @@ import CursorTrail from "../components/CursorTrail";
 import Providers from "../components/Providers";
 import ScrollProgress from "../components/ScrollProgress";
 import Tracker from "../components/Tracker";
+import MusicPlayer from "../components/MusicPlayer";
 import { site } from "../lib/content";
 
 export const metadata: Metadata = {
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CursorTrail />
             {children}
             <Tracker />
+            <MusicPlayer />
           </ContentProvider>
         </Providers>
       </body>
