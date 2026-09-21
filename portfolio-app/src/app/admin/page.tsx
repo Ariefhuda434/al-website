@@ -85,8 +85,46 @@ const emptyWork = (order: number): Omit<WorkRow, "id"> => ({ title: "", desc: ""
 async function uploadImage(file: File, path: string): Promise<string> {
   const storage = getFirebaseStorage();
   const refPath = ref(storage, `${path}${path.endsWith("/") ? "" : "/"}${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`);
-  await uploadBytes(refPath, file);
-  return getDownloadURL(refPath);
+  await withTimeout(uploadBytes(refPath, file), 45000, "Upload terlalu lama — pastikan Firebase Storage aktif");
+  return withTimeout(getDownloadURL(refPath), 15000, "Gagal mengambil URL foto");
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+
+function StorageBanner({ state }: { state: "checking" | "ok" | "off" | null }) {
+  if (state === "off") {
+    return (
+      <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        ⚠️ Firebase Storage belum aktif — upload foto akan terus "loading". Aktifkan dulu: <b>Firebase Console → Build → Storage → Get started</b>, lalu tempel aturan di <code>portfolio-app/storage.rules</code>.
+      </div>
+    );
+  }
+  return null;
+}
+
+function useStorageHealth() {
+  const [state, setState] = useState<"checking" | "ok" | "off" | null>(null);
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let on = true;
+    (async () => {
+      try {
+        const st = getFirebaseStorage();
+        const bucket = (st.app as { options?: { storageBucket?: string } }).options?.storageBucket as string;
+        const r = await fetch(`https://firebasestorage.googleapis.com/v0/b/${bucket}/o?maxResults=1`);
+        if (on) setState(r.ok ? "ok" : "off");
+      } catch {
+        if (on) setState("off");
+      }
+    })();
+    return () => { on = false; };
+  }, []);
+  return state;
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -737,6 +775,7 @@ function MusicTab() {
   const data = useDoc();
   const [songs, setSongs] = useState<SongRow[]>([]);
   const inited = useRef(false);
+  const storageState = useStorageHealth();
   useEffect(() => {
     if (inited.current) return;
     inited.current = true;
@@ -760,6 +799,7 @@ function MusicTab() {
   };
   return (
     <SectionCard title="Musik" hint="Lagu player (vinyl ♪). Judul bebas, source = file MP3 di Storage atau /music/…">
+      <StorageBanner state={storageState} />
       <Rows
         items={songs}
         onChange={setSongs}
@@ -896,6 +936,7 @@ function PortfolioTab() {
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Omit<WorkRow, "id">>(emptyWork(0));
   const [dragId, setDragId] = useState<string | null>(null);
+  const storageState = useStorageHealth();
 
   useEffect(() => {
     const db = getFirebaseDb();
@@ -960,6 +1001,7 @@ function PortfolioTab() {
         <WorkForm initial={draft} onSave={save} onCancel={() => setEditing(null)} />
       )}
 
+      <StorageBanner state={storageState} />
       <PreviewStrip rows={rows} onReorder={onDropRow} />
 
       <Card className="overflow-x-auto !p-0">
