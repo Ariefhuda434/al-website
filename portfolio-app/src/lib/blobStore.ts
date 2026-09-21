@@ -32,6 +32,7 @@ export async function writeJSON(path: string, data: unknown): Promise<string> {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return blob.url;
 }
