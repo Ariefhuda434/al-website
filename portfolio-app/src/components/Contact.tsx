@@ -97,8 +97,8 @@ export default function Contact() {
         <div>
           <SectionHeading title="say hello ♡" sub="with passion, with love, with dreams" />
           <p className="mt-8 max-w-md text-xl leading-relaxed text-berry">
-            Butuh MC untuk acaramu, ingin memesan bunga kawat bulu, atau punya proyek desain? Kirim pesan, saya
-            balas secepatnya.
+            Hanya sekadar menyapa, ingin bertanya, atau cerita hal kecil? Kirim pesan — aku senang membaca dan
+            membalasnya.
           </p>
 
           {channels.length > 0 && (
@@ -225,7 +225,7 @@ export default function Contact() {
                     value={values.message}
                     onChange={set("message")}
                     className="field resize-none"
-                    placeholder="Ceritakan kebutuhanmu, misalnya tanggal acara atau jenis bunga yang diinginkan"
+                    placeholder="Tulis pesan atau cerita kecilmu di sini"
                     aria-required="true"
                     aria-invalid={errors.message ? "true" : undefined}
                     aria-describedby={errors.message ? "message-error" : undefined}

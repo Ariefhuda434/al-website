@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Flower2 } from "lucide-react";
-import { testimonials } from "../lib/content";
+import { site, testimonials } from "../lib/content";
 import { FlowerHead } from "./Flower";
 import Reveal, { ease } from "./Reveal";
 import Section from "./Section";
@@ -38,6 +38,25 @@ export default function Testimonials() {
               </motion.p>
             ))}
           </div>
+
+          {site.instagram && (
+            <a
+              href={`https://instagram.com/${site.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-soft group mt-10 inline-flex min-h-14 items-center gap-3 rounded-full px-6 py-3 transition duration-300 hover:-translate-y-0.5 hover:bg-white/80"
+            >
+              <span className="text-2xl" aria-hidden="true">
+                🌷
+              </span>
+              <span className="font-semibold text-ink">
+                @{site.instagram}
+              </span>
+              <span className="text-sm text-berry transition-transform duration-300 group-hover:translate-x-1">
+                open →
+              </span>
+            </a>
+          )}
         </div>
       </Reveal>
     </Section>
