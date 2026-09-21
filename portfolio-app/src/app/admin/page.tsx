@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, setDoc, limit } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
   BarChart3,
@@ -28,7 +28,7 @@ import {
   User2,
   Users,
 } from "lucide-react";
-import { getFirebaseAuth, getFirebaseDb, getFirebaseStorage, isFirebaseConfigured } from "../../lib/firebaseConfig";
+import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from "../../lib/firebaseConfig";
 import { isAllowedAdmin, isSuspiciousInput, logAdmin, OWNER_EMAIL } from "../../lib/security";
 import { toast, ToastHost } from "../../components/ToastHost";
 
@@ -82,11 +82,61 @@ function toDate(ts?: Visit["ts"]) {
 
 const emptyWork = (order: number): Omit<WorkRow, "id"> => ({ title: "", desc: "", idn: "", image: "", aspect: "aspect-[3/4]", tone: "from-mauve to-butter", order });
 
+async function compressImage(file: File): Promise<File> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1600;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (b) => (b ? res(new File([b], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" })) : rej(new Error("Kompresi foto gagal"))),
+        "image/jpeg",
+        0.78
+      );
+    };
+    img.onerror = () => rej(new Error("Foto tidak terbaca — coba file lain"));
+    img.src = url;
+  });
+}
+
+function fileToDataUrl(file: Blob): Promise<string> {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(String(fr.result));
+    fr.onerror = () => rej(new Error("Gagal membaca file"));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function getReady(file: File): Promise<File> {
+  if (file.type.startsWith("image/")) return compressImage(file);
+  return file;
+}
+
+async function uploadBlob(file: File, path: string): Promise<string> {
+  const name = `${path.replace(/\/+$/, "")}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const res = await upload(name, file, { access: "public", handleUploadUrl: "/api/upload" });
+  return res.url;
+}
+
 async function uploadImage(file: File, path: string): Promise<string> {
-  const storage = getFirebaseStorage();
-  const refPath = ref(storage, `${path}${path.endsWith("/") ? "" : "/"}${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`);
-  await withTimeout(uploadBytes(refPath, file), 45000, "Upload terlalu lama — pastikan Firebase Storage aktif");
-  return withTimeout(getDownloadURL(refPath), 15000, "Gagal mengambil URL foto");
+  const ready = await getReady(file);
+  try {
+    return await withTimeout(uploadBlob(ready, path), 45000, "Upload ke Vercel Blob terlalu lama");
+  } catch (err) {
+    if (ready.type.startsWith("audio/")) {
+      throw new Error("Upload MP3 butuh Vercel Blob. Aktifkan di Vercel → Storage → Buat Blob store (gratis, tanpa kartu), atau pakai URL lagu langsung.");
+    }
+    const dataUrl = await withTimeout(fileToDataUrl(ready), 15000, "Gagal menyimpan foto");
+    toast("Blob belum aktif — foto tersimpan sebagai data (aman, ketuk sisipkan lagi)", "info");
+    return dataUrl;
+  }
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
@@ -100,7 +150,8 @@ function StorageBanner({ state }: { state: "checking" | "ok" | "off" | null }) {
   if (state === "off") {
     return (
       <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        ⚠️ Firebase Storage belum aktif — upload foto akan terus "loading". Aktifkan dulu: <b>Firebase Console → Build → Storage → Get started</b>, lalu tempel aturan di <code>portfolio-app/storage.rules</code>.
+        ⚠️ <b>Vercel Blob belum aktif</b> — upload foto akan disimpan sebagai data (tetap jalan), MP3 butuh Blob.
+        Aktifkan sekali di <b>Vercel dashboard → Storage → Create Blob store</b> (gratis, tanpa kartu) lalu simpan tokennya. Saya bisa bantu.
       </div>
     );
   }
@@ -110,14 +161,12 @@ function StorageBanner({ state }: { state: "checking" | "ok" | "off" | null }) {
 function useStorageHealth() {
   const [state, setState] = useState<"checking" | "ok" | "off" | null>(null);
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
     let on = true;
     (async () => {
       try {
-        const st = getFirebaseStorage();
-        const bucket = (st.app as { options?: { storageBucket?: string } }).options?.storageBucket as string;
-        const r = await fetch(`https://firebasestorage.googleapis.com/v0/b/${bucket}/o?maxResults=1`);
-        if (on) setState(r.ok ? "ok" : "off");
+        const r = await fetch("/api/upload");
+        const j = await r.json();
+        if (on) setState(j.ok ? "ok" : "off");
       } catch {
         if (on) setState("off");
       }
