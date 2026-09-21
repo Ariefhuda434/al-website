@@ -40,7 +40,8 @@ function Letters({ text, delay = 0 }: { text: string; delay?: number }) {
 export default function Hero() {
   const { site } = useContent();
   const introLines = site.heroIntro.split("\n");
-  const headline = site.heroTitle || `hi, i'm ${site.shortName} ♡`;
+  const heroTitle = site.heroTitle || `hi, i'm ${site.shortName} ♡`;
+  const headline = heroTitle.replace(/\s*[♡♥]+\s*$/u, "").trim();
   // Parallax halus mengikuti mouse (hanya di perangkat dengan mouse)
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -79,9 +80,17 @@ export default function Hero() {
 
           <h1
             aria-label={site.name}
-            className="text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
+            className="flex flex-wrap items-center justify-center gap-[0.08em] text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
           >
             <Letters text={headline} delay={0.6} />
+            <motion.img
+              src="/images/kartun lucu.png"
+              alt="♥"
+              className="inline-block h-[0.55em] w-[0.55em] translate-y-[0.06em] rounded-[0.22em] object-cover shadow-lg shadow-[#E8A0BF]/40 ring-2 ring-white/80"
+              initial={{ opacity: 0, scale: 0, rotate: -12 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 0.7, ease, delay: 1.9 }}
+            />
           </h1>
 
           <motion.div
