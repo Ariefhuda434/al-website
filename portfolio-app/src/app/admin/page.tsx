@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, setDoc, limit } from "firebase/firestore";
-import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
   BarChart3,
@@ -121,8 +120,18 @@ async function getReady(file: File): Promise<File> {
 
 async function uploadBlob(file: File, path: string): Promise<string> {
   const name = `${path.replace(/\/+$/, "")}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const res = await upload(name, file, { access: "public", handleUploadUrl: "/api/upload" });
-  return res.url;
+  const res = await fetch(`/api/upload?filename=${encodeURIComponent(name)}`, {
+    method: "POST",
+    body: file,
+    headers: { "content-type": file.type || "application/octet-stream" },
+  });
+  if (!res.ok) {
+    const j = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(j?.error || "Upload gagal");
+  }
+  const j = (await res.json()) as { url?: string };
+  if (!j.url) throw new Error("Upload gagal");
+  return j.url;
 }
 
 async function uploadImage(file: File, path: string): Promise<string> {
