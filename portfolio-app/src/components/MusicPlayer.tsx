@@ -14,14 +14,38 @@ export default function MusicPlayer() {
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    const tryAutoplay = () =>
-      a.play().then(() => setPlaying(true)).catch(() => {});
+    let tried = false;
+    const tryAutoplay = () => {
+      a.play()
+        .then(() => {
+          setPlaying(true);
+          tried = true;
+        })
+        .catch(() => {});
+    };
     tryAutoplay();
+    // Browser memblokir autoplay murni; jika diblokir,
+    // coba lagi saat pengguna berinteraksi pertama kali (klik/sentuh/tekan).
+    const onGesture = () => {
+      if (tried || !audioRef.current?.paused) return;
+      tryAutoplay();
+    };
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
     const onVisibility = () => {
-      if (!document.hidden && !a.paused) a.currentTime = songs[current].startAt;
+      if (!document.hidden && audioRef.current) {
+        if (audioRef.current.currentTime < songs[current].startAt) {
+          audioRef.current.currentTime = songs[current].startAt;
+        }
+        audioRef.current.play().catch(() => {});
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [current]);
 
   const playFrom = (t: number) => {
