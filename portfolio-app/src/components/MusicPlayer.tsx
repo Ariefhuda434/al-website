@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
+import { site } from '../lib/content';
 
 const songs = [
   { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" },
@@ -46,7 +47,7 @@ export default function MusicPlayer() {
       
       <div className="flex flex-col">
         <span className="text-sm font-semibold text-[#8B3A4D]">{songs[current].title}</span>
-        <span className="text-xs text-[#8B3A4D]/50">Annisa Al Maghirah</span>
+        <span className="text-xs text-[#8B3A4D]/50">{site.shortName}</span>
       </div>
       
       <div className="flex gap-2">
