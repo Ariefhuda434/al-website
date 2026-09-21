@@ -156,9 +156,6 @@ export default function Portfolio() {
   return (
     <Section id="portfolio">
       <SectionHeading title="little things i've made ♡" sub="a little collection of things i've created, worked on, or simply had fun making." />
-      <p className="mt-4 text-center text-base text-muted italic md:text-lg">
-        Kumpulan kecil dari hal-hal yang pernah aku buat, kerjakan, atau sekadar seru-seruan saat membuatnya.
-      </p>
       <Stagger className="mt-14 columns-1 gap-6 sm:columns-2 lg:columns-3" gap={0.12}>
         {works.map((w, i) => (
           <StaggerItem key={w.id} className="mb-6 break-inside-avoid">
