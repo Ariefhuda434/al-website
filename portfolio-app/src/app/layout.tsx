@@ -4,10 +4,11 @@ import "@fontsource-variable/fraunces/full-italic.css";
 import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
 import Backdrop from "../components/Backdrop";
+import { ContentProvider } from "../components/contentContext";
 import CursorTrail from "../components/CursorTrail";
-import MusicPlayer from "../components/MusicPlayer";
 import Providers from "../components/Providers";
 import ScrollProgress from "../components/ScrollProgress";
+import Tracker from "../components/Tracker";
 import { site } from "../lib/content";
 
 export const metadata: Metadata = {
@@ -54,12 +55,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Lewati ke konten utama
         </a>
-        <Providers>
-          <Backdrop />
-          <ScrollProgress />
-          <CursorTrail />
-          <MusicPlayer />
-          {children}
+<Providers>
+          <ContentProvider>
+            <Backdrop />
+            <ScrollProgress />
+            <CursorTrail />
+            {children}
+            <Tracker />
+          </ContentProvider>
         </Providers>
       </body>
     </html>

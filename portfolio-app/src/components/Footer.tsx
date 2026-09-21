@@ -1,17 +1,17 @@
 "use client";
 
 import { ArrowUp, Heart } from "lucide-react";
-import { getChannels } from "../lib/channels";
-import { nav, site } from "../lib/content";
+import { nav } from "../lib/content";
+import { useContent } from "./contentContext";
 import ChannelIcon from "./ChannelIcon";
 import { FlowerHead } from "./Flower";
 
 /** Pita teks berjalan pelan. Dekoratif, jadi disembunyikan dari pembaca layar. */
-function MottoBand() {
+function MottoBand({ motto }: { motto: string[] }) {
   const half = (
     <div className="flex shrink-0 items-center">
       {[0, 1].map((r) =>
-        site.motto.map((m) => (
+        motto.map((m) => (
           <span key={`${r}-${m}`} className="flex items-center">
             <span className="px-6 md:px-9">{m}</span>
             <FlowerHead tone="mauve" petals={7} className="h-9 w-9 animate-spin-slow md:h-12 md:w-12" />
@@ -33,10 +33,33 @@ function MottoBand() {
 }
 
 export default function Footer() {
-  const channels = getChannels();
+  const { site } = useContent();
+  const channels = [
+    ...(site.whatsapp
+      ? [
+          {
+            kind: "whatsapp" as const,
+            label: "WhatsApp",
+            handle: `+${site.whatsapp.replace(/\D/g, "")}`,
+            href: `https://wa.me/${site.whatsapp.replace(/\D/g, "")}`,
+          },
+        ]
+      : []),
+    ...(site.instagram
+      ? [
+          {
+            kind: "instagram" as const,
+            label: "Instagram",
+            handle: `@${site.instagram.replace("@", "")}`,
+            href: `https://instagram.com/${site.instagram.replace("@", "")}`,
+          },
+        ]
+      : []),
+    ...(site.email ? [{ kind: "email" as const, label: "Email", handle: site.email, href: `mailto:${site.email}` }] : []),
+  ];
   return (
     <footer className="relative overflow-x-clip pt-10">
-      <MottoBand />
+      <MottoBand motto={site.motto} />
 
       <div className="px-5 pb-10 pt-12 sm:px-8"><div className="mx-auto max-w-6xl">
         <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr]">

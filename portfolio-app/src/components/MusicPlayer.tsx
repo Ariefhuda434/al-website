@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { site } from '../lib/content';
 
 const songs = [
-  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3", startAt: 10 },
+  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" },
 ];
 
 export default function MusicPlayer() {
@@ -32,28 +32,11 @@ export default function MusicPlayer() {
     };
     window.addEventListener("pointerdown", onGesture, { once: true });
     window.addEventListener("keydown", onGesture, { once: true });
-    const onVisibility = () => {
-      if (!document.hidden && audioRef.current) {
-        if (audioRef.current.currentTime < songs[current].startAt) {
-          audioRef.current.currentTime = songs[current].startAt;
-        }
-        audioRef.current.play().catch(() => {});
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("pointerdown", onGesture);
       window.removeEventListener("keydown", onGesture);
-      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [current]);
-
-  const playFrom = (t: number) => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (a.currentTime < t) a.currentTime = t;
-    a.play().then(() => setPlaying(true)).catch(() => {});
-  };
 
   const toggle = () => {
     const a = audioRef.current;
@@ -62,7 +45,7 @@ export default function MusicPlayer() {
       a.pause();
       setPlaying(false);
     } else {
-      playFrom(songs[current].startAt);
+      a.play().then(() => setPlaying(true)).catch(() => {});
     }
   };
 

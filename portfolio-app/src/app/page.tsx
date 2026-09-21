@@ -4,6 +4,7 @@ import Download from "../components/Download";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
+import Organizations from "../components/Organizations";
 import Portfolio from "../components/Portfolio";
 import Projects from "../components/Projects";
 import Skills from "../components/Skills";
@@ -19,6 +20,7 @@ export default function Home() {
         <Skills />
         <Portfolio />
         <Projects />
+        <Organizations />
         <Testimonials />
         <Contact />
         <Download />

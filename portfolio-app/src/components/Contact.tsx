@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CircleAlert, Send } from "lucide-react";
-import { getChannels } from "../lib/channels";
-import { site } from "../lib/content";
+import { useContent } from "./contentContext";
 import ChannelIcon from "./ChannelIcon";
 import { Stagger, StaggerItem, ease } from "./Reveal";
 import Section from "./Section";
@@ -47,7 +46,30 @@ function FieldError({ id, text }: { id: string; text?: string }) {
 }
 
 export default function Contact() {
-  const channels = getChannels();
+  const { site } = useContent();
+  const channels = [
+    ...(site.whatsapp
+      ? [
+          {
+            kind: "whatsapp" as const,
+            label: "WhatsApp",
+            handle: `+${site.whatsapp.replace(/\D/g, "")}`,
+            href: `https://wa.me/${site.whatsapp.replace(/\D/g, "")}`,
+          },
+        ]
+      : []),
+    ...(site.instagram
+      ? [
+          {
+            kind: "instagram" as const,
+            label: "Instagram",
+            handle: `@${site.instagram.replace("@", "")}`,
+            href: `https://instagram.com/${site.instagram.replace("@", "")}`,
+          },
+        ]
+      : []),
+    ...(site.email ? [{ kind: "email" as const, label: "Email", handle: site.email, href: `mailto:${site.email}` }] : []),
+  ];
   const [values, setValues] = useState<Values>(initial);
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sent" | "unconfigured">("idle");
@@ -73,7 +95,7 @@ export default function Contact() {
     const text = `Halo ${site.shortName}, saya ${name}${email ? ` (${email})` : ""}.\n\n${values.message.trim()}`;
 
     if (site.whatsapp) {
-      window.open(`https://wa.me/${site.whatsapp}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+      window.open(`https://wa.me/${site.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
       setVia("whatsapp");
       setStatus("sent");
     } else if (site.email) {
@@ -95,11 +117,8 @@ export default function Contact() {
     <Section id="contact">
       <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
         <div>
-          <SectionHeading title="say hello ♡" sub="with passion, with love, with dreams" />
-          <p className="mt-8 max-w-md text-xl leading-relaxed text-berry">
-            Hanya sekadar menyapa, ingin bertanya, atau cerita hal kecil? Kirim pesan — aku senang membaca dan
-            membalasnya.
-          </p>
+<SectionHeading title={site.contactTitle} sub="with passion, with love, with dreams" />
+          <p className="mt-8 max-w-md text-xl leading-relaxed text-berry">{site.contactDesc}</p>
 
           {channels.length > 0 && (
             <Stagger className="mt-9 flex flex-col gap-3" gap={0.1}>
@@ -109,6 +128,7 @@ export default function Contact() {
                     href={c.href}
                     target={c.kind === "email" ? undefined : "_blank"}
                     rel={c.kind === "email" ? undefined : "noopener noreferrer"}
+                    data-track={`channel-${c.kind}`}
                     className="glass-soft group flex min-h-16 items-center gap-4 rounded-2xl px-5 py-3 transition duration-300 hover:-translate-y-0.5 hover:bg-white/80"
                   >
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-berry text-cream transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-110">

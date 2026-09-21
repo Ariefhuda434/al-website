@@ -24,7 +24,9 @@ export const nav = [
   { id: "skills", label: "i love" },
   { id: "portfolio", label: "i made" },
   { id: "projects", label: "now" },
+  { id: "organizations", label: "orgs" },
   { id: "testimonials", label: "handmade" },
+  { id: "contact", label: "say hi" },
 ] as const;
 
 export const about = {

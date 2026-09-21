@@ -2,8 +2,8 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
-import { site } from "../lib/content";
 import Bouquet from "./Bouquet";
+import { useContent } from "./contentContext";
 import { ease } from "./Reveal";
 
 /** Nama tampil huruf demi huruf, naik dari balik topeng dengan pegas. */
@@ -38,6 +38,8 @@ function Letters({ text, delay = 0 }: { text: string; delay?: number }) {
 }
 
 export default function Hero() {
+  const { site } = useContent();
+  const introLines = site.heroIntro.split("\n");
   // Parallax halus mengikuti mouse (hanya di perangkat dengan mouse)
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -71,14 +73,14 @@ export default function Hero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mauve opacity-70" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-berry" />
             </span>
-            Halo, senang kamu mampir
+            {site.heroBadge}
           </motion.p>
 
           <h1
             aria-label={site.name}
             className="text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
           >
-            <Letters text="hi, i'm al ♡" delay={0.6} />
+            <Letters text={`hi, i'm ${site.shortName} ♡`} delay={0.6} />
           </h1>
 
           <motion.div
@@ -88,9 +90,12 @@ export default function Hero() {
             transition={{ duration: 0.8, ease, delay: 1.5 }}
           >
             <p className="max-w-2xl text-lg leading-relaxed text-berry md:text-xl">
-              just a little space about me,<br />
-              the things i love, the things i make,<br />
-              and the little things i'm learning along the way.
+              {introLines.map((line, i) => (
+                <span key={i}>
+                  {line}
+                  {i < introLines.length - 1 && <br />}
+                </span>
+              ))}
             </p>
           </motion.div>
 
@@ -103,7 +108,7 @@ export default function Hero() {
             <a href="#portfolio" className="btn btn-primary btn-shine">
               Lihat karya
             </a>
-            <a href="#contact" className="btn btn-glass">
+            <a href="#contact" className="btn btn-glass" data-track="cta-contact-hero">
               Hubungi saya
             </a>
           </motion.div>

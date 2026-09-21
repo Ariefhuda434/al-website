@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { works } from "../lib/content";
+import { useContent } from "./contentContext";
 import { Stagger, StaggerItem, ease } from "./Reveal";
 import SafeImage from "./SafeImage";
 import Section from "./Section";
@@ -11,23 +11,25 @@ import SectionHeading from "./SectionHeading";
 
 function Lightbox({
   index,
+  list,
   onClose,
   onChange,
 }: {
   index: number;
+  list: ReturnType<typeof useContent>["works"];
   onClose: () => void;
   onChange: (i: number, dir: 1 | -1) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dirRef = useRef<1 | -1>(1);
-  const work = works[index];
+  const work = list[index];
 
   const go = useCallback(
     (dir: 1 | -1) => {
       dirRef.current = dir;
-      onChange((index + dir + works.length) % works.length, dir);
+      onChange((index + dir + list.length) % list.length, dir);
     },
-    [index, onChange],
+    [index, list.length, onChange],
   );
 
   useEffect(() => {
@@ -144,6 +146,7 @@ function Lightbox({
 }
 
 export default function Portfolio() {
+  const { site, works } = useContent();
   const [open, setOpen] = useState<number | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
@@ -155,7 +158,7 @@ export default function Portfolio() {
 
   return (
     <Section id="portfolio">
-      <SectionHeading title="little things i've made ♡" sub="a little collection of things i've created, worked on, or simply had fun making." />
+      <SectionHeading title={site.portfolioTitle} sub={site.portfolioSub} />
       <Stagger className="mt-14 columns-1 gap-6 sm:columns-2 lg:columns-3" gap={0.12}>
         {works.map((w, i) => (
           <StaggerItem key={w.id} className="mb-6 break-inside-avoid">
@@ -195,7 +198,7 @@ export default function Portfolio() {
       </Stagger>
 
       <AnimatePresence>
-        {open !== null && <Lightbox index={open} onClose={close} onChange={(i) => setOpen(i)} />}
+        {open !== null && <Lightbox index={open} list={works} onClose={close} onChange={(i) => setOpen(i)} />}
       </AnimatePresence>
     </Section>
   );

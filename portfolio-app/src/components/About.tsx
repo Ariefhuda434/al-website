@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { about, site } from "../lib/content";
+import { useContent } from "./contentContext";
 import { FlowerHead } from "./Flower";
 import Reveal, { Stagger, StaggerItem } from "./Reveal";
 import SafeImage from "./SafeImage";
@@ -9,7 +9,7 @@ import Section from "./Section";
 import SectionHeading from "./SectionHeading";
 
 /** Foto miring mengikuti arah mouse, seperti kartu yang dipegang. */
-function TiltPhoto() {
+function TiltPhoto({ src, shortName, role }: { src: string; shortName: string; role: string }) {
   const px = useMotionValue(0);
   const py = useMotionValue(0);
   const rotateY = useSpring(useTransform(px, [-0.5, 0.5], [-9, 9]), { stiffness: 140, damping: 16 });
@@ -43,8 +43,8 @@ function TiltPhoto() {
         className="relative z-10 aspect-[4/5] overflow-hidden rounded-[2.5rem] border-4 border-white/80 shadow-[0_30px_60px_-25px_rgba(139,58,77,0.55)]"
       >
         <SafeImage
-          src="/images/foto al.png"
-          alt={`Foto ${site.shortName}`}
+          src={src}
+          alt={`Foto ${shortName}`}
           sizes="(min-width: 768px) 28rem, 90vw"
           tone="from-blush to-mauve"
         />
@@ -52,8 +52,8 @@ function TiltPhoto() {
 
       <div className="absolute -bottom-5 -right-2 z-20 animate-float sm:-right-5">
         <div className="glass rounded-2xl px-4 py-3">
-          <p className="font-display text-xl leading-tight text-ink">{site.shortName}</p>
-          <p className="text-xs font-medium text-berry">Mahasiswa FKM</p>
+          <p className="font-display text-xl leading-tight text-ink">{shortName}</p>
+          <p className="text-xs font-medium text-berry">{role}</p>
         </div>
       </div>
     </div>
@@ -61,15 +61,16 @@ function TiltPhoto() {
 }
 
 export default function About() {
+  const { site, aboutParas } = useContent();
   return (
     <Section id="about">
       <Reveal scale={0.97} y={48}>
         <div className="glass rounded-[2.75rem] p-7 sm:p-10 md:p-16">
-          <SectionHeading title={about.title} sub={about.sub} />
+          <SectionHeading title={site.aboutTitle} sub={site.aboutSub} />
           <div className="mt-12 grid items-center gap-16 md:grid-cols-[0.9fr_1.1fr] md:gap-14">
-            <TiltPhoto />
+            <TiltPhoto src={site.aboutPhoto} shortName={site.shortName} role={site.aboutRole} />
             <Stagger className="space-y-6" gap={0.14}>
-              {about.paras.map((para, i) => (
+              {aboutParas.map((para, i) => (
                 <StaggerItem key={i}>
                   <p
                     className={

@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { nav, site } from "../lib/content";
+import { nav } from "../lib/content";
+import { useContent } from "./contentContext";
 import { FlowerHead } from "./Flower";
 import { ease } from "./Reveal";
 
 const trackedIds = [...nav.map((n) => n.id), "contact"];
 
 export default function Navbar() {
+  const { site } = useContent();
   const [active, setActive] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
