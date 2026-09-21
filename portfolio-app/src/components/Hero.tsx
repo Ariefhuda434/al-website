@@ -1,14 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { site } from "../lib/content";
 import Bouquet from "./Bouquet";
@@ -42,43 +34,6 @@ function Letters({ text, delay = 0 }: { text: string; delay?: number }) {
         </span>
       ))}
     </span>
-  );
-}
-
-/** Peran yang bergantian: "Saya seorang [public speaker]". */
-function RoleRotator() {
-  const reduce = useReducedMotion();
-  const [i, setI] = useState(0);
-
-  useEffect(() => {
-    if (reduce) return;
-    const t = setInterval(() => setI((v) => (v + 1) % site.roles.length), 2600);
-    return () => clearInterval(t);
-  }, [reduce]);
-
-  return (
-    <p className="flex flex-wrap items-baseline gap-x-2 text-xl text-berry md:text-2xl">
-      <span>Saya seorang</span>
-      {!reduce && <span className="sr-only">{site.roles.join(", ")}</span>}
-      {reduce ? (
-        <span className="font-display italic text-ink">{site.roles.join(", ")}</span>
-      ) : (
-        <span aria-hidden="true" className="relative inline-flex h-[1.5em] overflow-hidden align-bottom">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
-              key={i}
-              className="font-display italic text-ink"
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "-100%", opacity: 0 }}
-              transition={{ duration: 0.4, ease }}
-            >
-              {site.roles[i]}
-            </motion.span>
-          </AnimatePresence>
-        </span>
-      )}
-    </p>
   );
 }
 
@@ -124,7 +79,6 @@ export default function Hero() {
             className="text-[clamp(3.6rem,12vw,8.6rem)] leading-[0.92] tracking-[-0.03em] text-ink"
           >
             <Letters text="hi, i'm al ♡" delay={0.6} />
-            <Letters text="" delay={0.85} />
           </h1>
 
           <motion.div
@@ -133,8 +87,11 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease, delay: 1.5 }}
           >
-            <RoleRotator />
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-berry">{site.intro}</p>
+            <p className="max-w-2xl text-lg leading-relaxed text-berry md:text-xl">
+              just a little space about me,<br />
+              the things i love, the things i make,<br />
+              and the little things i'm learning along the way.
+            </p>
           </motion.div>
 
           <motion.div

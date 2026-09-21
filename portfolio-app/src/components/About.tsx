@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { site } from "../lib/content";
+import { about, site } from "../lib/content";
 import { FlowerHead } from "./Flower";
 import Reveal, { Stagger, StaggerItem } from "./Reveal";
 import SafeImage from "./SafeImage";
@@ -43,8 +43,8 @@ function TiltPhoto() {
         className="relative z-10 aspect-[4/5] overflow-hidden rounded-[2.5rem] border-4 border-white/80 shadow-[0_30px_60px_-25px_rgba(139,58,77,0.55)]"
       >
         <SafeImage
-          src="/images/profile.jpg"
-          alt={`Foto ${site.name}`}
+          src="/images/foto al.png"
+          alt={`Foto ${site.shortName}`}
           sizes="(min-width: 768px) 28rem, 90vw"
           tone="from-blush to-mauve"
         />
@@ -65,26 +65,26 @@ export default function About() {
     <Section id="about">
       <Reveal scale={0.97} y={48}>
         <div className="glass rounded-[2.75rem] p-7 sm:p-10 md:p-16">
-          <SectionHeading title="Tentang saya" sub="with passion for creativity" />
+          <SectionHeading title={about.title} sub={about.sub} />
           <div className="mt-12 grid items-center gap-16 md:grid-cols-[0.9fr_1.1fr] md:gap-14">
             <TiltPhoto />
             <Stagger className="space-y-6" gap={0.14}>
-              <StaggerItem>
-                <p className="max-w-[34rem] text-xl leading-loose text-ink md:text-2xl md:leading-[1.7]">
-                  Saya adalah mahasiswa FKM yang punya minat besar di public speaking, menjadi MC, menjalankan
-                  usaha bunga kawat bulu, dan mengeksplorasi desain.
-                </p>
-              </StaggerItem>
-              <StaggerItem>
-                <p className="max-w-[34rem] text-lg leading-relaxed text-berry">
-                  Lewat portofolio ini, saya ingin berbagi perjalanan kreatif dan karya-karya yang sudah saya
-                  hasilkan, dengan{" "}
-                  <span className="font-display italic">{site.motto.join(", ")}.</span>
-                </p>
-              </StaggerItem>
+              {about.paras.map((para, i) => (
+                <StaggerItem key={i}>
+                  <p
+                    className={
+                      i === 0
+                        ? "max-w-[34rem] text-xl leading-loose text-ink md:text-2xl md:leading-[1.7]"
+                        : "max-w-[34rem] text-lg leading-relaxed text-berry md:text-xl"
+                    }
+                  >
+                    {para}
+                  </p>
+                </StaggerItem>
+              ))}
               <StaggerItem>
                 <a href="#skills" className="btn btn-primary btn-shine">
-                  Lihat skill saya
+                  things i love ↓
                 </a>
               </StaggerItem>
             </Stagger>

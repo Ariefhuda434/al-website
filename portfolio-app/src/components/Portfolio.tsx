@@ -9,9 +9,6 @@ import SafeImage from "./SafeImage";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
 
-const ratios = ["aspect-[4/5]", "aspect-square", "aspect-[4/5]"];
-const offsets = ["", "md:mt-16", "md:mt-6"];
-
 function Lightbox({
   index,
   onClose,
@@ -111,6 +108,7 @@ function Lightbox({
           <div>
             <h3 className="text-2xl text-ink">{work.title}</h3>
             <p className="text-berry">{work.desc}</p>
+            <p className="mt-0.5 text-sm italic text-muted">{work.idn}</p>
           </div>
           <div className="flex shrink-0 gap-2">
             <button
@@ -157,10 +155,13 @@ export default function Portfolio() {
 
   return (
     <Section id="portfolio">
-      <SectionHeading title="little things i've made ♡" sub="with passion, with love, with dreams" />
-      <Stagger className="mt-14 grid gap-10 md:grid-cols-3 md:items-start" gap={0.14}>
+      <SectionHeading title="little things i've made ♡" sub="a little collection of things i've created, worked on, or simply had fun making." />
+      <p className="mt-4 text-center text-base text-muted italic md:text-lg">
+        Kumpulan kecil dari hal-hal yang pernah aku buat, kerjakan, atau sekadar seru-seruan saat membuatnya.
+      </p>
+      <Stagger className="mt-14 columns-1 gap-6 sm:columns-2 lg:columns-3" gap={0.12}>
         {works.map((w, i) => (
-          <StaggerItem key={w.id} className={offsets[i % offsets.length]}>
+          <StaggerItem key={w.id} className="mb-6 break-inside-avoid">
             <button
               type="button"
               onClick={(e) => {
@@ -171,9 +172,7 @@ export default function Portfolio() {
               className="group block w-full text-left"
             >
               <div
-                className={`relative overflow-hidden rounded-[2rem] shadow-[0_26px_50px_-26px_rgba(139,58,77,0.55)] transition-transform duration-500 ease-out group-hover:-translate-y-2 group-hover:rotate-[-1deg] ${
-                  ratios[i % ratios.length]
-                }`}
+                className={`relative overflow-hidden rounded-[2rem] shadow-[0_26px_50px_-26px_rgba(139,58,77,0.55)] transition-transform duration-500 ease-out group-hover:-translate-y-2 group-hover:rotate-[-1deg] ${w.aspect}`}
               >
                 <SafeImage
                   src={w.image}
@@ -192,6 +191,7 @@ export default function Portfolio() {
               </div>
               <h3 className="mt-5 text-2xl text-ink md:text-3xl">{w.title}</h3>
               <p className="mt-1 max-w-xs text-berry">{w.desc}</p>
+              <p className="mt-0.5 max-w-xs text-sm text-muted italic">{w.idn}</p>
             </button>
           </StaggerItem>
         ))}
