@@ -1,59 +1,54 @@
 import { NextResponse } from "next/server";
+import { readJSON, writeJSON } from "../../../lib/blobStore";
+import { works as worksDefaults } from "../../../lib/content";
 
-const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
-const KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
-const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
+const CONTENT_PATH = "data/content.json";
+const WORKS_PATH = "data/works.json";
 
-function v(node: any): any {
-  if (node == null) return null;
-  if ("stringValue" in node) return node.stringValue;
-  if ("integerValue" in node) return Number(node.integerValue);
-  if ("doubleValue" in node) return Number(node.doubleValue);
-  if ("booleanValue" in node) return node.booleanValue;
-  if ("timestampValue" in node) return node.timestampValue;
-  if ("arrayValue" in node) return (node.arrayValue?.values ?? []).map(v);
-  if ("mapValue" in node) return fieldsToObj(node.mapValue?.fields ?? {});
-  return null;
-}
-
-function fieldsToObj(fields: any): any {
-  const o: Record<string, any> = {};
-  for (const k of Object.keys(fields || {})) {
-    try {
-      o[k] = v(fields[k]);
-    } catch {
-      o[k] = null;
-    }
-  }
-  return o;
-}
+type WorkRow = {
+  id: string;
+  title: string;
+  desc: string;
+  idn: string;
+  image: string;
+  aspect: string;
+  tone: string;
+  order?: number;
+};
 
 export async function GET() {
-  if (!PROJECT || !KEY) return NextResponse.json({ content: null, works: [] });
+  const content = await readJSON<Record<string, unknown>>(CONTENT_PATH, {});
+  const works = await readJSON<WorkRow[]>(WORKS_PATH, () =>
+    worksDefaults.map((w, i) => ({
+      id: String(w.id ?? `w_${i}`),
+      title: w.title,
+      desc: w.desc,
+      idn: (w as { idn?: string }).idn ?? "",
+      image: w.image,
+      aspect: (w as { aspect?: string }).aspect ?? "aspect-[3/4]",
+      tone: w.tone,
+      order: i,
+    }))
+  );
+  return NextResponse.json({ content, works: Array.isArray(works) ? works : [] });
+}
+
+export async function POST(request: Request) {
   try {
-    const [cres, wres] = await Promise.all([
-      fetch(`${BASE}/content/main?key=${encodeURIComponent(KEY)}`, { cache: "no-store" }),
-      fetch(`${BASE}/works?key=${encodeURIComponent(KEY)}`, { cache: "no-store" }),
-    ]);
-
-    let content: Record<string, any> = {};
-    if (cres.ok) {
-      const j = await cres.json();
-      const d = j.fields ?? j.document?.fields ?? j.documents?.[0]?.fields ?? {};
-      content = fieldsToObj(d);
+    const { file, data } = await request.json();
+    if (file === "content") {
+      await writeJSON(CONTENT_PATH, data ?? {});
+      return NextResponse.json({ ok: true, file: "content" });
     }
-
-    const works: any[] = [];
-    if (wres.ok) {
-      const wj = await wres.json();
-      for (const d of wj.documents ?? []) {
-        works.push({ id: d.name.split("/").pop(), ...fieldsToObj(d.fields) });
-      }
-      works.sort((a, b) => Number(a.order ?? 9999) - Number(b.order ?? 9999));
+    if (file === "works") {
+      await writeJSON(WORKS_PATH, Array.isArray(data) ? data : []);
+      return NextResponse.json({ ok: true, file: "works" });
     }
-
-    return NextResponse.json({ content, works }, { headers: { "Cache-Control": "no-store, max-age=0" } });
-  } catch {
-    return NextResponse.json({ content: null, works: [] });
+    return NextResponse.json({ error: "file harus 'content' atau 'works'" }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Gagal menyimpan" },
+      { status: 500 }
+    );
   }
 }

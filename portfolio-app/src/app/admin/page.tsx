@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, setDoc, limit } from "firebase/firestore";
 import {
   ArrowLeft,
   BarChart3,
@@ -27,9 +26,30 @@ import {
   User2,
   Users,
 } from "lucide-react";
-import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from "../../lib/firebaseConfig";
+import { getFirebaseAuth, isFirebaseConfigured } from "../../lib/firebaseConfig";
 import { isAllowedAdmin, isSuspiciousInput, logAdmin, OWNER_EMAIL } from "../../lib/security";
 import { toast, ToastHost } from "../../components/ToastHost";
+
+// Semua data (konten + karya) disimpan sebagai JSON di Vercel Blob.
+let currentContent: Record<string, unknown> = {};
+async function fetchContent(): Promise<Record<string, unknown>> {
+  try {
+    const r = await fetch("/api/public", { cache: "no-store" });
+    const j = await r.json();
+    currentContent = j.content ?? {};
+  } catch {
+    currentContent = {};
+  }
+  return currentContent;
+}
+async function saveContent(patch: Record<string, unknown>) {
+  const res = await fetch("/api/public", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file: "content", data: { ...currentContent, ...patch } }),
+  });
+  if (!res.ok) throw new Error("Gagal menyimpan ke Blob");
+}
 
 const ASPECTS = [
   "aspect-[3/1]",
@@ -301,9 +321,13 @@ function Breakdown({ title, rows }: { title: string; rows: [string, number][] })
 function useDoc() {
   const [data, setData] = useState<Record<string, unknown>>({});
   useEffect(() => {
-    const db = getFirebaseDb();
-    const unsub = onSnapshot(doc(db, "content", "main"), (snap) => setData(snap.data() ?? {}), () => {});
-    return unsub;
+    let alive = true;
+    fetchContent().then((c) => {
+      if (alive) setData(c);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
   return data;
 }
@@ -405,7 +429,7 @@ function HeroTab() {
       motto: Array.isArray(d.motto) ? (d.motto as string[]).join(", ") : (d.motto ?? ""),
       heroScrollHint: d.heroScrollHint ?? "",
     });
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -413,7 +437,7 @@ function HeroTab() {
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), {
+      await saveContent({
         name: form.name,
         shortName: form.shortName,
         heroBadge: form.heroBadge,
@@ -421,7 +445,7 @@ function HeroTab() {
         heroIntro: form.heroIntro,
         heroScrollHint: form.heroScrollHint,
         motto: form.motto.split(",").map((s) => s.trim()),
-      }, { merge: true });
+      });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -484,7 +508,7 @@ function AboutTab() {
       aboutPhoto: d.aboutPhoto ?? "",
       aboutParas: Array.isArray(d.aboutParas) ? (d.aboutParas as string[]).join("\n") : (d.aboutParas ?? ""),
     });
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -492,13 +516,13 @@ function AboutTab() {
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), {
+      await saveContent({
         aboutTitle: form.aboutTitle,
         aboutSub: form.aboutSub,
         aboutRole: form.aboutRole,
         aboutPhoto: form.aboutPhoto,
         aboutParas: form.aboutParas.split("\n").map((s) => s.trim()).filter(Boolean),
-      }, { merge: true });
+      });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -557,7 +581,7 @@ function KontakTab() {
       email: d.email ?? "",
       cv: d.cv ?? "",
     });
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -565,7 +589,7 @@ function KontakTab() {
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), { ...form }, { merge: true });
+      await saveContent({ ...form });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -631,16 +655,13 @@ function LoveTab() {
     setSk(Array.isArray(d.skills) ? (d.skills as { id?: string; icon?: string; emoji?: string; title?: string; en?: string; idn?: string }[]).map((s, i) => ({
       id: s.id ?? `s_${i}`, icon: s.icon ?? "flower", emoji: s.emoji ?? "", title: s.title ?? "", en: s.en ?? "", idn: s.idn ?? "",
     })) : []);
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), {
-        skillsTitle: title,
-        skills: sk.map((s) => ({ ...s })),
-      }, { merge: true });
+      await saveContent({ skillsTitle: title, skills: sk.map((s) => ({ ...s })) });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -692,13 +713,13 @@ function CurrentTab() {
     setLabel(d.currentLabel ?? "currently… ♡");
     setSub(d.currentSub ?? "and probably trying something new again soon.");
     setItems(Array.isArray(d.currentItems) ? (d.currentItems as string[]).map(String) : []);
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), { currentLabel: label, currentSub: sub, currentItems: items.map((s) => s.trim()).filter(Boolean) }, { merge: true });
+      await saveContent({ currentLabel: label, currentSub: sub, currentItems: items.map((s) => s.trim()).filter(Boolean) });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -742,13 +763,13 @@ function OrgsTab() {
     inited.current = true;
     const d = data as Record<string, any>;
     setOrgs(Array.isArray(d.orgs) ? (d.orgs as { org?: string; role?: string; emoji?: string }[]).map((o) => ({ org: o.org ?? "", role: o.role ?? "", emoji: o.emoji ?? "🤝" })) : []);
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), { orgs: orgs.map((o) => ({ ...o })) }, { merge: true });
+      await saveContent({ orgs: orgs.map((o) => ({ ...o })) });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -791,13 +812,13 @@ function HandmadeTab() {
     setTitle(d.handmadeTitle ?? "a little something i made ♡");
     setSub(d.handmadeSub ?? "handmade with love");
     setParas(Array.isArray(d.handmadeParas) ? (d.handmadeParas as string[]).join("\n") : (d.handmadeParas ?? ""));
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), { handmadeTitle: title, handmadeSub: sub, handmadeParas: paras.split("\n").map((s) => s.trim()).filter(Boolean) }, { merge: true });
+      await saveContent({ handmadeTitle: title, handmadeSub: sub, handmadeParas: paras.split("\n").map((s) => s.trim()).filter(Boolean) });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -839,13 +860,13 @@ function MusicTab() {
     inited.current = true;
     const d = data as Record<string, any>;
     setSongs(Array.isArray(d.music) ? (d.music as { title?: string; src?: string }[]).map((m) => ({ title: m.title ?? "", src: m.src ?? "" })) : []);
-  }, [doc]);
+  }, [data]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await setDoc(doc(getFirebaseDb(), "content", "main"), { music: songs.map((s) => ({ ...s })) }, { merge: true });
+      await saveContent({ music: songs.map((s) => ({ ...s })) });
       setSaved(true);
       toast("Konten tersimpan ✓");
       setTimeout(() => setSaved(false), 2500);
@@ -997,32 +1018,47 @@ function PortfolioTab() {
   const storageState = useStorageHealth();
 
   useEffect(() => {
-    const db = getFirebaseDb();
-    const q = query(collection(db, "works"), orderBy("order", "asc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const list: WorkRow[] = [];
-      snap.forEach((s) => {
-        const d = s.data() as Record<string, any>;
-        list.push({ id: s.id, title: String(d.title ?? ""), desc: String(d.desc ?? ""), idn: String(d.idn ?? ""), image: String(d.image ?? ""), aspect: String(d.aspect ?? "aspect-[3/4]"), tone: String(d.tone ?? "from-mauve to-butter"), order: Number(d.order ?? 0) });
-      });
-      setRows(list);
-    });
-    return unsub;
+    let alive = true;
+    fetch("/api/public", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive || !Array.isArray(j.works)) return;
+        const list = j.works.slice().sort((a: WorkRow, b: WorkRow) => (a.order ?? 0) - (b.order ?? 0));
+        setRows(list);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
+  const persistWorks = async (next: WorkRow[]) => {
+    setRows(next);
+    try {
+      const res = await fetch("/api/public", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file: "works", data: next }),
+      });
+      if (!res.ok) throw new Error("Gagal");
+    } catch {
+      toast("Gagal menyimpan karya", "err");
+    }
+  };
+
   const save = async (w: Omit<WorkRow, "id">) => {
-    const db = getFirebaseDb();
     if (editing === "new") {
-      await addDoc(collection(db, "works"), { ...w, createdAt: Date.now() });
+      const id = `w_${Date.now()}`;
+      await persistWorks([...rows, { ...w, id, order: rows.length }]);
     } else if (editing) {
-      await setDoc(doc(db, "works", editing), w, { merge: true });
+      await persistWorks(rows.map((r) => (r.id === editing ? { ...r, ...w } : r)));
     }
     setEditing(null);
   };
 
   const remove = async (id: string) => {
     if (!window.confirm("Hapus karya ini?")) return;
-    await deleteDoc(doc(getFirebaseDb(), "works", id));
+    await persistWorks(rows.filter((r) => r.id !== id));
   };
 
   const startNew = () => {
@@ -1037,12 +1073,11 @@ function PortfolioTab() {
     setQuickBusy(true);
     try {
       const image = await uploadBlob(file, "works");
-      const db = getFirebaseDb();
-      await addDoc(collection(db, "works"), {
-        title: "", desc: "", idn: "", image,
-        aspect: "aspect-[3/4]", tone: "from-blush to-mauve",
-        order: rows.length, createdAt: Date.now(),
-      });
+      const id = `w_${Date.now()}`;
+      await persistWorks([
+        ...rows,
+        { id, title: "", desc: "", idn: "", image, aspect: "aspect-[3/4]", tone: "from-blush to-mauve", order: rows.length },
+      ]);
       toast("Foto ditambahkan ✓");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Gagal menambah foto", "err");
@@ -1060,12 +1095,8 @@ function PortfolioTab() {
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     const final = next.map((r, i) => ({ ...r, order: i }));
-    setRows(final);
     setDragId(null);
-    const db = getFirebaseDb();
-    final.forEach((r) => {
-      setDoc(doc(db, "works", r.id), { order: r.order }, { merge: true });
-    });
+    void persistWorks(final);
   };
 
   return (
@@ -1185,11 +1216,11 @@ function StatsTab() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const db = getFirebaseDb();
-      const q = query(collection(db, "visits"), orderBy("ts", "desc"), limit(1500));
-      const snap = await getDocs(q);
-      const list: Visit[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Visit, "id">) }));
-      setVisits(list);
+      const r = await fetch("/api/stats");
+      if (r.ok) {
+        const j = await r.json();
+        setVisits(j.visits ?? []);
+      }
     } finally {
       setLoading(false);
     }

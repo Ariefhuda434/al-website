@@ -1,67 +1,58 @@
-import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
-import { getFirebaseDb, isFirebaseConfigured } from "./firebaseConfig";
-
 export const OWNER_EMAIL = "nisaalmaghirah@gmail.com";
 
 const SUS_RE =
-  /(\b(union|select|insert|update|delete|drop|alter|create|exec|xp_|sleep\s*\(|waitfor\s+delay|information_schema)\b|\btable\b|\bwhere\b|or\s+['"]?\d+\s*=\s*\d+|--|;|\/\*|\*\/|<\s*script|javascript\s*:\s*)/i;
+  /(\b(union|select|insert|update|delete|drop|alter|create|exec|xp_|sleep\(|waitfor|information_schema|where|or\s+1=1)\b|--|;|\/\*|\*\/(\s|$)|['"]\s*(or|and)\s*['"]\d|<\s*script|javascript:\s*)/i;
 
-export function isSuspiciousInput(...inputs: (string | null | undefined)[]) {
+export function isSuspiciousInput(...inputs: (string | null | undefined)[]): boolean {
   return inputs.some((i) => typeof i === "string" && SUS_RE.test(i));
 }
 
-export async function auditMeta(): Promise<{ ip: string; ua: string }> {
+type SS = {
+  owner?: string;
+  allowedEmails?: string[];
+};
+
+let cachedSettings: SS | null = null;
+
+// Super admin: hanya email tertentu yang boleh masuk (di Vercel Blob /api/settings).
+export async function isAllowedAdmin(email: string): Promise<boolean> {
   try {
-    const r = await fetch("/api/admin-audit");
-    const j = await r.json();
-    return { ip: String(j?.ip ?? "?"), ua: String(j?.ua ?? "") };
+    if (!cachedSettings) {
+      const r = await fetch("/api/settings", { cache: "no-store" });
+      if (r.ok) cachedSettings = (await r.json()) as SS;
+    }
+    const s = cachedSettings ?? {};
+    const owner = s.owner || OWNER_EMAIL;
+    const list = Array.isArray(s.allowedEmails) ? s.allowedEmails : [];
+    return email === owner || list.includes(email);
   } catch {
-    return { ip: "?", ua: typeof navigator !== "undefined" ? navigator.userAgent : "" };
+    return email === OWNER_EMAIL;
   }
 }
 
-type LogEntry = {
+export async function logAdmin(entry: {
   action: string;
   email?: string;
   result?: "success" | "failed" | "denied" | "attempt";
   detail?: string;
   suspicious?: boolean;
   level?: "info" | "warn" | "blocked";
-};
-
-export async function logAdmin(entry: LogEntry) {
+}): Promise<void> {
   try {
-    if (!isFirebaseConfigured) return;
-    const db = getFirebaseDb();
-    const { ip, ua } = await auditMeta();
-    await addDoc(collection(db, "adminLogs"), {
-      ts: serverTimestamp(),
-      date: new Date().toISOString().slice(0, 10),
+    const payload: Record<string, unknown> = {
       action: entry.action,
-      email: entry.email ?? null,
+      email: entry.email ?? undefined,
       result: entry.result ?? "attempt",
-      detail: String(entry.detail ?? "").slice(0, 600),
-      suspicious: Boolean(entry.suspicious ?? false),
+      detail: String(entry.detail ?? "").slice(0, 500),
+      suspicious: Boolean(entry.suspicious),
       level: entry.level ?? "info",
-      ip: ip || null,
-      ua: ua.slice(0, 300),
+    };
+    await fetch("/api/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
   } catch {
-    /* logging must never break the app */
-  }
-}
-
-export async function isAllowedAdmin(email: string): Promise<boolean> {
-  if (!isFirebaseConfigured) return false;
-  try {
-    const db = getFirebaseDb();
-    const snap = await getDoc(doc(db, "adminSettings", "main"));
-    const data = snap.data();
-    if (!data) return email === OWNER_EMAIL;
-    const list = Array.isArray(data.allowedEmails) ? data.allowedEmails : [];
-    const owner = String(data.owner ?? OWNER_EMAIL);
-    return email === owner || list.includes(email);
-  } catch {
-    return false;
+    /* logging never breaks the app */
   }
 }
