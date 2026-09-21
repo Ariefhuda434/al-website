@@ -1,9 +1,9 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { site } from '../lib/content';
 
 const songs = [
-  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3" },
+  { title: "RIPPLES — beabadoobee", src: "/music/RIPPLES.mp3", startAt: 10 },
 ];
 
 export default function MusicPlayer() {
@@ -11,23 +11,39 @@ export default function MusicPlayer() {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const tryAutoplay = () =>
+      a.play().then(() => setPlaying(true)).catch(() => {});
+    tryAutoplay();
+    const onVisibility = () => {
+      if (!document.hidden && !a.paused) a.currentTime = songs[current].startAt;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [current]);
+
+  const playFrom = (t: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.currentTime < t) a.currentTime = t;
+    a.play().then(() => setPlaying(true)).catch(() => {});
+  };
+
   const toggle = () => {
-    if (!audioRef.current) return;
+    const a = audioRef.current;
+    if (!a) return;
     if (playing) {
-      audioRef.current.pause();
+      a.pause();
       setPlaying(false);
     } else {
-      audioRef.current.play();
-      setPlaying(true);
+      playFrom(songs[current].startAt);
     }
   };
 
   const changeSong = (index: number) => {
     setCurrent(index);
-    setPlaying(true);
-    setTimeout(() => {
-      audioRef.current?.play();
-    }, 100);
   };
 
   return (
