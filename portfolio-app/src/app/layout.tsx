@@ -5,6 +5,7 @@ import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
 import Backdrop from "../components/Backdrop";
 import CursorTrail from "../components/CursorTrail";
+import MusicPlayer from "../components/MusicPlayer";
 import Providers from "../components/Providers";
 import ScrollProgress from "../components/ScrollProgress";
 import { site } from "../lib/content";
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Backdrop />
           <ScrollProgress />
           <CursorTrail />
+          <MusicPlayer />
           {children}
         </Providers>
       </body>
