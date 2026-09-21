@@ -1,8 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
-import { getFirebaseDb, isFirebaseConfigured } from "../lib/firebaseConfig";
 import {
   about as aboutDef,
   music as musicDef,
@@ -198,61 +196,62 @@ function mergeSite(data: Record<string, unknown>): SiteContent {
   };
 }
 
-/** Konten situs: ambil dari Firestore (content/main + works) dan otomatis mengikuti perubahan. */
+function mapWorks(v: unknown, fallback: Work[]): Work[] {
+  if (!Array.isArray(v) || v.length === 0) return fallback;
+  return v.map((w) => {
+    const it = (w ?? {}) as Record<string, any>;
+    return {
+      id: strOr(it.id, String(Math.random())),
+      title: strOr(it.title, ""),
+      desc: strOr(it.desc, ""),
+      idn: strOr(it.idn, ""),
+      image: strOr(it.image, ""),
+      aspect: strOr(it.aspect, "aspect-[3/4]"),
+      tone: strOr(it.tone, "from-mauve to-butter"),
+      createdAt: typeof it.createdAt === "number" ? it.createdAt : undefined,
+    };
+  });
+}
+
+/** Konten situs: ambil dari Firestore lewat route server (content/main + works). */
 export function ContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<ContentState>(defaults);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
-    try {
-      const db = getFirebaseDb();
+    let alive = true;
 
-      const unsubContent = onSnapshot(
-        doc(db, "content", "main"),
-        (snap) => {
-          const data = snap.data();
-          if (!data) return;
-          setContent((c) => ({
-            ...c,
-            site: mergeSite(data),
-            aboutParas: Array.isArray(data.aboutParas)
-              ? data.aboutParas.map(String)
-              : c.aboutParas,
-          }));
-        },
-        () => {},
-      );
+    const load = async () => {
+      try {
+        const res = await fetch("/api/public", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!alive || !data) return;
+        setContent((c) => ({
+          site: data.content ? mergeSite(data.content) : c.site,
+          aboutParas: Array.isArray(data.content?.aboutParas)
+            ? data.content.aboutParas.map(String)
+            : c.aboutParas,
+          works: mapWorks(data.works, c.works),
+        }));
+      } catch {
+        /* biarkan default */
+      }
+    };
 
-      const qWorks = query(collection(db, "works"), orderBy("order", "asc"));
-      const unsubWorks = onSnapshot(
-        qWorks,
-        (snap) => {
-          const list: Work[] = [];
-          snap.forEach((d) => {
-            const w = d.data() as Record<string, any>;
-            list.push({
-              id: d.id,
-              title: strOr(w.title, ""),
-              desc: strOr(w.desc, ""),
-              idn: strOr(w.idn, ""),
-              image: strOr(w.image, ""),
-              aspect: strOr(w.aspect, "aspect-[3/4]"),
-              tone: strOr(w.tone, "from-mauve to-butter"),
-              createdAt: typeof w.createdAt === "number" ? w.createdAt : undefined,
-            });
-          });
-          if (list.length > 0) setContent((c) => ({ ...c, works: list }));
-        },
-        () => {},
-      );
-
-      return () => {
-        unsubContent();
-        unsubWorks();
-      };
-    } catch {
-      return;
-    }
+    load();
+    const t = setInterval(load, 20000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   return <ContentCtx.Provider value={content}>{children}</ContentCtx.Provider>;

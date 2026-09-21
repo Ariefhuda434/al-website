@@ -2,7 +2,7 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
-import Bouquet from "./Bouquet";
+import SafeImage from "./SafeImage";
 import { useContent } from "./contentContext";
 import { ease } from "./Reveal";
 
@@ -143,7 +143,9 @@ export default function Hero() {
             <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.35" strokeDasharray="1.2 2.6" strokeLinecap="round" />
           </svg>
           <motion.div style={{ x: bouquetX, y: bouquetY }} className="relative">
-            <Bouquet />
+            <div className="relative aspect-square w-full overflow-hidden rounded-[3rem] border border-cream/70 shadow-2xl shadow-blush/40">
+              <SafeImage src="/images/kartun lucu.png" alt={`Gambar ${site.shortName}`} tone="from-blush to-mauve" />
+            </div>
           </motion.div>
         </div>
       </div>

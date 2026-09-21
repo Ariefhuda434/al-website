@@ -1030,6 +1030,28 @@ function PortfolioTab() {
     setEditing("new");
   };
 
+  const quickAddRef = useRef<HTMLInputElement>(null);
+  const [quickBusy, setQuickBusy] = useState(false);
+  const quickAdd = async (file?: File) => {
+    if (!file) return;
+    setQuickBusy(true);
+    try {
+      const image = await uploadBlob(file, "works");
+      const db = getFirebaseDb();
+      await addDoc(collection(db, "works"), {
+        title: "", desc: "", idn: "", image,
+        aspect: "aspect-[3/4]", tone: "from-blush to-mauve",
+        order: rows.length, createdAt: Date.now(),
+      });
+      toast("Foto ditambahkan ✓");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal menambah foto", "err");
+    } finally {
+      setQuickBusy(false);
+      if (quickAddRef.current) quickAddRef.current.value = "";
+    }
+  };
+
   const onDropRow = (fromId: string, toId: string) => {
     const from = rows.findIndex((r) => r.id === fromId);
     const to = rows.findIndex((r) => r.id === toId);
@@ -1050,9 +1072,13 @@ function PortfolioTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold text-[#8B3A4D]">Portfolio — little things i've made ♡</h2>
-        <button onClick={startNew} className="btn btn-primary">
+        <button onClick={startNew} className="btn btn-glass">
           <Plus className="h-5 w-5" /> Tambah karya
         </button>
+        <label className="btn btn-primary cursor-pointer">
+          {quickBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />} Tambah foto langsung
+          <input ref={quickAddRef} type="file" accept="image/*" className="sr-only" disabled={quickBusy} onChange={(e) => void quickAdd(e.target.files?.[0])} />
+        </label>
       </div>
 
       {editing === "new" && (
@@ -1154,6 +1180,7 @@ function FragmentRow({ index, row, editing, dragging, dragSource, onEdit, onRemo
 function StatsTab() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [storage, setStorage] = useState<{ usedMB: number; quotaMB: number; count: number; percent: number } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1165,6 +1192,12 @@ function StatsTab() {
       setVisits(list);
     } finally {
       setLoading(false);
+    }
+    try {
+      const r = await fetch("/api/storage");
+      if (r.ok) setStorage(await r.json());
+    } catch {
+      /* tanpa blob */
     }
   }, []);
 
@@ -1215,11 +1248,29 @@ function StatsTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold text-[#8B3A4D]">Statistik pengunjung</h2>
+        <h2 className="text-2xl font-semibold text-[#8B3A4D]">Statistik & penyimpanan</h2>
         <button onClick={load} className="btn btn-glass" disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Muat ulang
         </button>
       </div>
+
+      {storage && (
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-[#8B3A4D]">Penyimpanan Blob (live)</h3>
+            <span className="text-sm text-[#8B3A4D]/70">
+              {storage.usedMB} MB / {storage.quotaMB} MB · {storage.count} file
+            </span>
+          </div>
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#FFC0CB]/30">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#E8A0BF] to-[#FFC0CB] transition-all"
+              style={{ width: `${Math.max(storage.percent, 2)}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-[#8B3A4D]/50">Foto & MP3 yang diunggah lewat admin masuk ke sini.</p>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatBox label="Kunjungan" value={stats.views} icon={<BarChart3 className="h-5 w-5" />} />
