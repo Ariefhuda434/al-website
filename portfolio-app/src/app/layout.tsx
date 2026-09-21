@@ -1,24 +1,64 @@
-import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
-import './globals.css';
-import MusicPlayer from '../components/MusicPlayer';
-import Navbar from '../components/Navbar';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/fraunces/full.css";
+import "@fontsource-variable/fraunces/full-italic.css";
+import "@fontsource-variable/plus-jakarta-sans";
+import "./globals.css";
+import Backdrop from "../components/Backdrop";
+import CursorTrail from "../components/CursorTrail";
+import Providers from "../components/Providers";
+import ScrollProgress from "../components/ScrollProgress";
+import { site } from "../lib/content";
 
 export const metadata: Metadata = {
-  title: 'Portfolio Kreatif',
-  description: 'Portfolio pribadi mahasiswa FKM — Public Speaking, MC, Usaha Bunga Kawat Bulu, Desain.',
+  metadataBase: new URL(site.url),
+  title: {
+    default: `${site.name} | Public speaker, MC, bunga kawat bulu, desain`,
+    template: `%s | ${site.name}`,
+  },
+  description: site.description,
+  applicationName: site.name,
+  authors: [{ name: site.name }],
+  keywords: ["Annisa Al Maghirah", "portofolio", "public speaking", "MC", "bunga kawat bulu", "desain", "mahasiswa FKM"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "/",
+    siteName: site.name,
+    title: `${site.name} | Portofolio`,
+    description: site.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name} | Portofolio`,
+    description: site.description,
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#fff5f7",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="bg-[#FDF6F0] text-[#4A3F35] font-sans antialiased">
-        <Navbar />
-        <main>{children}</main>
-        <MusicPlayer />
+    <html lang="id">
+      <body>
+        <a
+          href="#main"
+          className="glass fixed left-4 top-4 z-[100] -translate-y-24 rounded-full px-5 py-3 font-semibold text-ink transition-transform focus:translate-y-0"
+        >
+          Lewati ke konten utama
+        </a>
+        <Providers>
+          <Backdrop />
+          <ScrollProgress />
+          <CursorTrail />
+          {children}
+        </Providers>
       </body>
     </html>
   );
