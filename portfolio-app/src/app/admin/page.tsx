@@ -16,6 +16,7 @@ import {
   Plus,
   RefreshCw,
   Save,
+  GripVertical,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -387,11 +388,11 @@ function WorkForm({ initial, onSave, onCancel }: { initial: Omit<WorkRow, "id">;
           <input type="number" className="field" value={w.order} onChange={set("order")} />
         </div>
         <div>
-          <Label>Deskripsi (EN)</Label>
+          <Label>Caption (EN)</Label>
           <input className="field" value={w.desc} onChange={set("desc")} />
         </div>
         <div>
-          <Label>Deskripsi (IDN)</Label>
+          <Label>Caption (IDN)</Label>
           <input className="field" value={w.idn} onChange={set("idn")} />
         </div>
         <div>
@@ -431,6 +432,7 @@ function PortfolioTab() {
   const [rows, setRows] = useState<WorkRow[]>([]);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Omit<WorkRow, "id">>(emptyWork(0));
+  const [dragId, setDragId] = useState<string | null>(null);
 
   useEffect(() => {
     const db = getFirebaseDb();
@@ -466,6 +468,22 @@ function PortfolioTab() {
     setEditing("new");
   };
 
+  const onDropRow = (fromId: string, toId: string) => {
+    const from = rows.findIndex((r) => r.id === fromId);
+    const to = rows.findIndex((r) => r.id === toId);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...rows];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    const final = next.map((r, i) => ({ ...r, order: i }));
+    setRows(final);
+    setDragId(null);
+    const db = getFirebaseDb();
+    final.forEach((r) => {
+      setDoc(doc(db, "works", r.id), { order: r.order }, { merge: true });
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -483,38 +501,66 @@ function PortfolioTab() {
         <table className="w-full min-w-[640px] text-left">
           <thead>
             <tr className="border-b border-[#8B3A4D]/15 text-xs uppercase tracking-wide text-[#8B3A4D]/60">
-              <th className="px-5 py-3">#</th>
-              <th className="px-5 py-3">Karya</th>
-              <th className="px-5 py-3">Deskripsi</th>
+              <th className="px-5 py-3">Seret</th>
+              <th className="px-5 py-3">Karya (caption EN)</th>
+              <th className="px-5 py-3">Caption IDN</th>
               <th className="px-5 py-3">Rasio</th>
               <th className="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <FragmentRow key={row.id} index={i} row={row} editing={editing === row.id} onEdit={() => { setDraft(row); setEditing(row.id); }} onRemove={() => remove(row.id)} onCancel={() => setEditing(null)} onSave={(w) => save(w)} />
+              <FragmentRow
+                key={row.id}
+                index={i}
+                row={row}
+                editing={editing === row.id}
+                dragging={dragId === row.id}
+                dragSource={dragId}
+                onEdit={() => { setDraft(row); setEditing(row.id); }}
+                onRemove={() => remove(row.id)}
+                onCancel={() => setEditing(null)}
+                onSave={(w) => save(w)}
+                onDragStart={() => setDragId(row.id)}
+                onDragOver={() => {}}
+                onDropped={onDropRow}
+              />
             ))}
           </tbody>
         </table>
+        <p className="border-t border-[#8B3A4D]/10 px-5 py-3 text-xs text-[#8B3A4D]/50">
+          Tahan lalu seret baris untuk mengubah urutan — urutan tersimpan otomatis. Ukuran/frame diatur lewat kolom Rasio.
+        </p>
         {!rows.length && <p className="px-5 py-8 text-center text-[#8B3A4D]/60">Belum ada karya. Klik "Tambah karya".</p>}
       </Card>
     </div>
   );
 }
 
-function FragmentRow({ index, row, editing, onEdit, onRemove, onCancel, onSave }: { index: number; row: WorkRow; editing: boolean; onEdit: () => void; onRemove: () => void; onCancel: () => void; onSave: (w: Omit<WorkRow, "id">) => void }) {
+function FragmentRow({ index, row, editing, dragging, dragSource, onEdit, onRemove, onCancel, onSave, onDragStart, onDragOver, onDropped }: { index: number; row: WorkRow; editing: boolean; dragging?: boolean; dragSource?: string | null; onEdit: () => void; onRemove: () => void; onCancel: () => void; onSave: (w: Omit<WorkRow, "id">) => void; onDragStart?: () => void; onDragOver?: () => void; onDropped?: (fromId: string, toId: string) => void }) {
   if (editing) {
     return (
       <tr>
-        <td colSpan={5} className="px-3 py-3">
+        <td colSpan={6} className="px-3 py-3">
           <WorkForm initial={row} onSave={onSave} onCancel={onCancel} />
         </td>
       </tr>
     );
   }
   return (
-    <tr className="border-b border-[#8B3A4D]/10 last:border-0">
-      <td className="px-5 py-3 text-[#8B3A4D]/60">{row.order}</td>
+    <tr
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={() => undefined}
+      onDragOver={(e) => { e.preventDefault(); onDragOver?.(); }}
+      onDrop={(e) => { e.preventDefault(); if (onDropped && dragSource && dragSource !== row.id) onDropped(dragSource, row.id); }}
+      className={`border-b border-[#8B3A4D]/10 last:border-0 ${dragging ? "opacity-40" : ""} cursor-grab active:cursor-grabbing`}
+      aria-label={`Urutkan: ${row.title}`}
+    >
+      <td className="px-5 py-3 text-[#8B3A4D]/60">
+        <GripVertical className="inline h-5 w-5" />
+        <span className="ml-1 text-xs">{index + 1}</span>
+      </td>
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${row.tone}`}>
@@ -524,7 +570,7 @@ function FragmentRow({ index, row, editing, onEdit, onRemove, onCancel, onSave }
           <span className="font-semibold text-[#8B3A4D]">{row.title || "(tanpa judul)"}</span>
         </div>
       </td>
-      <td className="px-5 py-3 text-[#8B3A4D]/80">{row.desc || "—"}</td>
+      <td className="px-5 py-3 text-[#8B3A4D]/80">{row.idn || "—"}</td>
       <td className="px-5 py-3 text-xs text-[#8B3A4D]/60">{row.aspect}</td>
       <td className="px-5 py-3">
         <div className="flex justify-end gap-2">
@@ -774,6 +820,10 @@ export default function Admin() {
             <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="field" placeholder="Password" autoComplete="current-password" />
           </div>
           <button type="submit" className="btn btn-primary btn-shine w-full !min-h-14 text-lg">Masuk</button>
+          <p className="text-center text-xs text-[#8B3A4D]/50">
+            Masuk dengan akun Firebase (email & password) yang dibuat di Firebase Console → Authentication → Add user.
+            Lupa password? Reset di console → Authentication → user → Reset password.
+          </p>
           <a href="/" className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#8B3A4D]/60 hover:text-[#8B3A4D]">
             <ArrowLeft className="h-4 w-4" /> Kembali ke beranda
           </a>

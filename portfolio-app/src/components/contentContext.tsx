@@ -72,7 +72,12 @@ export type ContentState = {
 const defaults: ContentState = {
   site: siteDefaults,
   aboutParas: [...aboutDef.paras],
-  works: worksDef.map((d) => ({ ...d, aspect: "aspect-[3/4]", tone: "from-mauve to-butter", id: String(d.id) })),
+  works: worksDef.map((d) => ({
+    ...d,
+    aspect: (d as any).aspect ?? "aspect-[3/4]",
+    tone: (d as any).tone ?? "from-mauve to-butter",
+    id: String(d.id),
+  })),
 };
 
 const ContentCtx = createContext<ContentState>(defaults);
@@ -151,7 +156,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
               createdAt: typeof w.createdAt === "number" ? w.createdAt : undefined,
             });
           });
-          setContent((c) => ({ ...c, works: list }));
+          if (list.length > 0) setContent((c) => ({ ...c, works: list }));
         },
         () => {},
       );
