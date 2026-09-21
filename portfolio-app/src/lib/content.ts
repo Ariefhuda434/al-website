@@ -134,15 +134,6 @@ export const works = [
     tone: "from-blush to-mauve",
   },
   {
-    id: 6,
-    title: "little moments",
-    desc: "some photos i took along the way.",
-    idn: "Beberapa foto yang aku ambil sepanjang perjalanan.",
-    image: "/images/Pasted image (2).png",
-    aspect: "aspect-[3/4]",
-    tone: "from-mauve to-blush",
-  },
-  {
     id: 7,
     title: "teaching & outreach",
     desc: "sharing and learning together.",
@@ -150,15 +141,6 @@ export const works = [
     image: "/images/mengajar di kelas.png",
     aspect: "aspect-[16/9]",
     tone: "from-butter to-mauve",
-  },
-  {
-    id: 8,
-    title: "little moments too",
-    desc: "moments i wanted to keep.",
-    idn: "Momen-momen yang ingin aku simpan.",
-    image: "/images/foto masak.png",
-    aspect: "aspect-[16/9]",
-    tone: "from-blush to-butter",
   },
   {
     id: 9,
