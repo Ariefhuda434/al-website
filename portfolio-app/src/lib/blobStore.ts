@@ -5,6 +5,16 @@ function norm(p: string): string {
 }
 
 export async function readJSON<T>(path: string, fallback: T | (() => T)): Promise<T> {
+  const stored = () => (typeof fallback === "function" ? (fallback as () => T)() : fallback);
+  try {
+    const storeId = (process.env.BLOB_STORE_ID || "").replace(/^store_/i, "").toLowerCase();
+    if (storeId) {
+      const res = await fetch(`https://${storeId}.public.blob.vercel-storage.com/${norm(path)}`, { cache: "no-store" });
+      if (res.ok) return (await res.json()) as T;
+    }
+  } catch {
+    /* fallback below */
+  }
   try {
     const res = await get(norm(path), { access: "public" });
     if (res && res.statusCode === 200 && res.stream) {
@@ -14,7 +24,7 @@ export async function readJSON<T>(path: string, fallback: T | (() => T)): Promis
   } catch {
     /* fallback */
   }
-  return typeof fallback === "function" ? (fallback as () => T)() : fallback;
+  return stored();
 }
 
 export async function writeJSON(path: string, data: unknown): Promise<string> {
