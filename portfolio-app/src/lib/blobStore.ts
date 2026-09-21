@@ -44,3 +44,11 @@ export async function removeBlob(path: string): Promise<void> {
     /* ignore */
   }
 }
+
+export const PATHS = {
+  content: "data/content.json",
+  works: "data/works.json",
+  stats: "data/stats.json",
+  log: "data/log.json",
+  settings: "data/settings.json",
+} as const;
