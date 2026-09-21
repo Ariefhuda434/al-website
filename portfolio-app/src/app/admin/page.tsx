@@ -311,9 +311,18 @@ function Upload({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unggahan gagal.");
+const tk = sessionStorage.getItem("al_admin_token") || "";
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+        headers: tk ? { Authorization: `Bearer ${tk}` } : {},
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        let msg = data.error || "Unggahan gagal.";
+        if (res.status === 401) msg = "Sesi admin kadaluarsa. Muat ulang lalu masuk lagi.";
+        throw new Error(msg);
+      }
       onChange(data.url);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Unggahan gagal.");
@@ -360,6 +369,7 @@ function Upload({
 export default function AdminPage() {
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [token, setToken] = useState<string>("");
   const [password, setPassword] = useState("");
   const [loginErr, setLoginErr] = useState("");
 
@@ -376,24 +386,34 @@ export default function AdminPage() {
     setDirty(true);
   }, []);
 
-  const loadAll = useCallback(async () => {
-    const res = await fetch("/api/content", { cache: "no-store" });
+const loadAll = useCallback(async () => {
+    const tk = sessionStorage.getItem("al_admin_token") || token;
+    const res = await fetch("/api/content", {
+      cache: "no-store",
+      headers: tk ? { Authorization: `Bearer ${tk}` } : {},
+    });
     if (!res.ok) return;
     const data = await res.json();
     setContent({ ...EMPTY, ...(data.content ?? {}) });
     setWorks(Array.isArray(data.works) ? data.works : []);
     setDirty(false);
-  }, []);
+  }, [token]);
 
   useEffect(() => {
+    const tk = sessionStorage.getItem("al_admin_token") || "";
+    if (tk) setToken(tk);
     (async () => {
-      const res = await fetch("/api/admin-auth", { cache: "no-store" });
+      const res = await fetch(tk ? "/api/admin-auth" : "/api/admin-auth", { cache: "no-store", headers: tk ? { Authorization: `Bearer ${tk}` } : {} });
       const data = await res.json().catch(() => ({ ok: false }));
       if (data.ok) {
         setAuthed(true);
         await loadAll();
+        return;
       }
-      setReady(true);
+      if (tk) {
+        setAuthed(true);
+        await loadAll();
+      }
     })();
   }, [loadAll]);
 
@@ -426,7 +446,13 @@ export default function AdminPage() {
       setLoginErr(data.error || "Tidak bisa masuk.");
       return;
     }
-    setAuthed(true);
+    if (data.token) {
+      sessionStorage.setItem("al_admin_token", data.token);
+      setToken(data.token);
+      setAuthed(true);
+    } else {
+      setAuthed(true);
+    }
     setPassword("");
     await loadAll();
   };
@@ -446,7 +472,10 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/content", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ content, works: works.map((w, i) => ({ ...w, order: i + 1 })) }),
       });
       const data = await res.json();

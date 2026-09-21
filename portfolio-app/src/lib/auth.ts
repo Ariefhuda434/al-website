@@ -30,9 +30,12 @@ export function verifyToken(token: string | undefined): boolean {
   return Number.isFinite(age) && age >= 0 && age < 7 * 24 * 60 * 60 * 1000;
 }
 
-export async function isAdmin(): Promise<boolean> {
+export async function isAdmin(request?: Request): Promise<boolean> {
   const jar = await cookies();
-  return verifyToken(jar.get(COOKIE)?.value);
+  if (verifyToken(jar.get(COOKIE)?.value)) return true;
+  const auth = request?.headers.get("authorization") || "";
+  const m = /^Bearer\s+(.+)$/i.exec(auth);
+  return verifyToken(m ? m[1] : undefined);
 }
 
 export const COOKIE_NAME = COOKIE;

@@ -25,8 +25,8 @@ async function note(entry: Log) {
 }
 
 /** Cek apakah sesi masih aktif. Dipakai halaman /admin saat dimuat. */
-export async function GET() {
-  return NextResponse.json({ ok: await isAdmin(), configured: Boolean(adminPassword()) });
+export async function GET(request: Request) {
+  return NextResponse.json({ ok: await isAdmin(request), configured: Boolean(adminPassword()) });
 }
 
 export async function POST(request: Request) {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   }
 
   await note({ ts: Date.now(), action: "login", result: "success", ip, ua });
-  const res = NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true, token: makeToken() });
   res.cookies.set(COOKIE_NAME, makeToken(), {
     path: "/",
     httpOnly: true,

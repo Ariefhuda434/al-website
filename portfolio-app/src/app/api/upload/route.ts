@@ -8,7 +8,7 @@ const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "application/pdf", "audio/mpeg"];
 
 export async function POST(request: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
+  if (!(await isAdmin(request))) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
 
   try {
     const form = await request.formData();

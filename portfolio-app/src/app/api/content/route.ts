@@ -13,8 +13,8 @@ function arr<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
-export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
+export async function GET(request: Request) {
+  if (!(await isAdmin(request))) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
   const [content, works] = await Promise.all([
     readJSON<Record<string, unknown>>(PATHS.content, {}),
     readJSON<Work[]>(PATHS.works, []),
@@ -24,7 +24,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
+  if (!(await isAdmin(request))) return NextResponse.json({ error: "Perlu masuk." }, { status: 401 });
 
   try {
     const body = (await request.json()) as { content?: unknown; works?: unknown };
