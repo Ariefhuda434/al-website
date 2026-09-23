@@ -1,26 +1,27 @@
 {
   "name": "portfolio-app",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "create-superadmin": "node scripts/create-superadmin.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@vercel/blob": "^2.8.0",
-    "firebase": "^12.19.0",
-    "framer-motion": "^13.4.0",
-    "lucide-react": "^1.47.0",
+    "bcryptjs": "^2.4.3",
+    "mysql2": "^3.11.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

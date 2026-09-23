@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfolio App v2 — MySQL (Aiven) + Admin/Superadmin + Live Preview
 
-## Getting Started
+Rebuild dari versi lama (Vercel Blob JSON) ke MySQL (Aiven), dengan sistem
+role admin/superadmin, draft + preview sebelum publish, dan hardening keamanan.
 
-First, run the development server:
+## 1. Setup database (Aiven MySQL)
+
+1. Di dashboard Aiven, ambil **Service URI**, host, port, user, password, dan
+   **CA certificate** (tombol "Show"/"Download").
+2. Jalankan skema:
+   ```bash
+   mysql --host=<host> --port=<port> --user=avnadmin -p \
+         --ssl-mode=REQUIRED --ssl-ca=ca.pem defaultdb < db/schema.sql
+   ```
+   (atau paste isi `db/schema.sql` lewat Aiven Console → Query editor)
+
+## 2. Environment variables
+
+Copy `.env.example` → `.env.local` (lokal) atau isi di Vercel → Settings →
+Environment Variables (production). **Jangan pernah commit password ke git.**
+
+- `DATABASE_URL` — `mysql://avnadmin:PASSWORD@host:port/defaultdb`
+- `DATABASE_CA_CERT_BASE64` — isi file `ca.pem` dari Aiven, di-encode base64:
+  `base64 -w0 ca.pem` (Linux) atau `base64 -i ca.pem` (Mac), lalu paste hasilnya.
+  Ini penting supaya koneksi TLS benar-benar diverifikasi (bukan cuma dienkripsi).
+- `BLOB_READ_WRITE_TOKEN` — tetap dari Vercel Blob, dipakai khusus upload gambar/pdf/audio.
+- `IP_HASH_SALT` — string acak sembarang, buat hash IP pengunjung (privasi).
+- `SESSION_COOKIE_NAME`, `SESSION_TTL_DAYS` — opsional, ada default.
+
+## 3. Buat akun superadmin pertama
+
+```bash
+npm install
+DATABASE_URL="mysql://..." DATABASE_CA_CERT_BASE64="..." \
+  node scripts/create-superadmin.mjs kamu@email.com "PasswordKuatMinimal10Karakter"
+```
+
+## 4. Jalankan
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Situs publik: `/`
+- Login admin: `/admin/login`
+- Dashboard: `/admin` (tab Konten, Karya, Statistik, Pengaturan, dan khusus
+  superadmin: Akun & Log)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Alur edit konten (dengan preview)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Admin buka tab **Konten**, edit section (JSON), klik **Simpan & Preview**.
+2. Draft tersimpan (belum tayang), tab baru terbuka menampilkan seluruh situs
+   dengan section itu memakai versi draft — sisanya tetap versi live.
+3. Kalau sudah cocok, kembali ke dashboard, klik **Publish** → draft jadi
+   konten resmi & tercatat di riwayat (`site_content_history`).
+4. Kalau tidak jadi, klik **Buang draft**.
 
-## Learn More
+## Role
 
-To learn more about Next.js, take a look at the following resources:
+- **admin**: edit konten, works, lihat statistik, lihat pengaturan (read-only).
+- **superadmin**: semua hak admin + kelola akun admin lain (buat/nonaktifkan),
+  ubah pengaturan situs, lihat log audit, hapus data statistik.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Keamanan yang sudah ditangani
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Password admin di-hash bcrypt (cost 12), tidak pernah disimpan/ditampilkan plaintext.
+- Sesi login: token acak 32-byte, disimpan **hash**-nya saja di DB (`sessions`),
+  bisa expire & di-revoke, bukan token statis seperti versi lama.
+- Rate limit login (6 percobaan/10 menit per IP+email) + dicatat sebagai `suspicious` di log.
+- IP pengunjung/disimpan sebagai **hash**, bukan mentah — mengurangi risiko privasi kalau data bocor.
+- Endpoint sensitif (`/api/admin/*`) semua di-guard `requireRole()`, dipisah admin vs superadmin.
+- `/admin/*` diberi header `noindex, nofollow` + `Cache-Control: no-store`.
+- Middleware edge menolak akses ke halaman admin tanpa cookie sesi sama sekali
+  (validasi penuh tetap di server lewat DB).
+- Upload dibatasi tipe file & ukuran (8MB), nama file disanitasi.
+- `next.config.ts` tidak lagi izinkan `hostname: "**"` untuk gambar remote (versi
+  lama membuka SEMUA domain gambar — sudah dipersempit ke domain Blob saja).
 
-## Deploy on Vercel
+## Yang masih perlu kamu isi manual
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Teks asli tiap section (hero, about, dst) — isi lewat panel admin, bukan hardcode.
+- Font & warna sudah dibawa dari versi lama (`globals.css`) — sesuaikan lagi kalau perlu.
+- Komponen `Projects.tsx` sengaja kosong (placeholder) — kasih tau kalau section
+  ini beda dari "Karya/Portfolio" supaya saya buatkan strukturnya.
+- Kalau ada komponen/fitur versi lama yang belum sempat saya lihat isinya
+  (CursorTrail custom, efek animasi spesifik, dll), kirim filenya, saya sesuaikan.
